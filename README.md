@@ -1,11 +1,14 @@
 # QuakeSnail
 
 [![CI](https://github.com/sneed-and-feed/quakesnail/actions/workflows/ci-and-release.yml/badge.svg)](https://github.com/sneed-and-feed/quakesnail/actions/workflows/ci-and-release.yml)
+[![Live Studio](https://img.shields.io/badge/Live_Studio-quakesnail.sneed--and--feed.workers.dev-00e5ff.svg)](https://quakesnail.sneed-and-feed.workers.dev)
 [![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Prover: Lean 4](https://img.shields.io/badge/formalization-Lean_4-purple.svg)](formalization/OcclusionTriad.lean)
 [![Kernel: no_std Rust SIMD](https://img.shields.io/badge/kernel-no_std_Rust_SIMD-red.svg)](rust/quakesnail_rs)
 [![Memory: < 2.0 MB SRAM](https://img.shields.io/badge/memory-<%202.0%20MB%20SRAM-green.svg)](results/darksnail_atlas_receipts.json)
+
+**Live Hosted 3D Tactical Studio (Cloudflare Workers):** [https://quakesnail.sneed-and-feed.workers.dev](https://quakesnail.sneed-and-feed.workers.dev)
 
 QuakeSnail is an open, next-generation real-time earthquake monitoring, phase-association, 3D travel-time hypocenter inversion, and Earthquake Early Warning (EEW) engine backed by a compiled `#[no_std]` Rust SIMD kernel, spatially indexed municipality intensity engine, and portable zero-install WebGL2 3D Globe and Tactical Studio workstation.
 
@@ -316,6 +319,9 @@ python -m quakesnail evaluate --mode-b --snr 20.0 --glitch-pct 0.15
 ```
 
 #### 3. Export Portable WebGL2 3D Tactical Studio
+
+A live Cloudflare-hosted deployment of the studio is available at [https://quakesnail.sneed-and-feed.workers.dev](https://quakesnail.sneed-and-feed.workers.dev). You can also export or serve it locally:
+
 ```bash
 # Export standalone single-file zero-install HTML5/WebGL2 Tactical Studio
 python -m quakesnail studio --export-html studio/quakesnail_portable_studio.html
