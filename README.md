@@ -379,6 +379,20 @@ All 58 tests pass unconditionally, demonstrating:
 
 ---
 
+## 11. Citation
+
+```bibtex
+@software{quakesnail_2026,
+  author       = {Cohen, Noah},
+  title        = {QuakeSnail: Real-Time 3D Earthquake Monitoring, Phase-Triad Association and Early Warning Engine},
+  year         = {2026},
+  version      = {0.1.0},
+  url          = {https://github.com/sneed-and-feed/quakesnail}
+}
+```
+
+---
+
 ## License
 
 CC0-1.0 Universal — Public Domain Dedication.

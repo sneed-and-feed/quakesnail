@@ -2,6 +2,7 @@
 name = "quakesnail_rs"
 version = "0.1.0"
 edition = "2021"
+authors = ["Noah Cohen"]
 description = "Allocation-free #[no_std] Rust SIMD seismic engine kernel"
 license = "CC0-1.0"
 

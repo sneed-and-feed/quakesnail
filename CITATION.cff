@@ -3,8 +3,8 @@ title: "QuakeSnail: Real-Time 3D Earthquake Monitoring, Phase-Triad Association 
 message: "If you use this software, please cite it using the metadata from this file."
 type: software
 authors:
-  - family-names: Skates
-    given-names: Cthulhu
+  - family-names: "Cohen"
+    given-names: "Noah"
 version: 0.1.0
 date-released: 2026-10-24
 license: CC0-1.0
