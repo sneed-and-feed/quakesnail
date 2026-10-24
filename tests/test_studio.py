@@ -274,6 +274,7 @@ class TestStudioTier4:
                     ["node", "--check", temp_js_path],
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
                 )
                 assert proc.returncode == 0, (
                     f"JavaScript syntax error in script block #{idx}:\n{proc.stderr}"
@@ -350,7 +351,9 @@ class TestStudioBroadcastAndLiveModes:
           process.exit(1);
         }
         """
-        proc = subprocess.run(["node", "-e", node_script], capture_output=True, text=True)
+        proc = subprocess.run(
+            ["node", "-e", node_script], capture_output=True, text=True, encoding="utf-8"
+        )
         assert proc.returncode == 0, f"Column-major clip-space check failed: {proc.stderr}"
 
     def test_option_a_and_c_broadcast_hud_and_live_feed_elements(self):
@@ -547,7 +550,9 @@ class TestStudioBroadcastAndLiveModes:
           process.exit(1);
         }}
         """
-        proc = subprocess.run(["node", "-e", node_code], capture_output=True, text=True)
+        proc = subprocess.run(
+            ["node", "-e", node_code], capture_output=True, text=True, encoding="utf-8"
+        )
         assert proc.returncode == 0, f"JS decodeMiniSeedBuffer failed: {proc.stderr}"
 
     def test_firefox_compositor_preserve_drawing_buffer_and_css_class_consistency(self):
@@ -901,7 +906,9 @@ class TestStudioBroadcastAndLiveModes:
           process.exit(1);
         }}
         """
-        proc = subprocess.run(["node", "-"], input=node_code, capture_output=True, text=True)
+        proc = subprocess.run(
+            ["node", "-"], input=node_code, capture_output=True, text=True, encoding="utf-8"
+        )
         assert proc.returncode == 0, f"JS geography/horizon test failed: {proc.stderr}"
 
 

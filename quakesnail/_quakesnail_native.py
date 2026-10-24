@@ -161,8 +161,12 @@ _NATIVE_LIB: Optional[ctypes.CDLL] = None
 
 
 def _find_and_load_native_library() -> Optional[ctypes.CDLL]:
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(pkg_dir)
     candidates = [
+        os.path.join(pkg_dir, "quakesnail_rs.dll"),
+        os.path.join(pkg_dir, "libquakesnail_rs.so"),
+        os.path.join(pkg_dir, "libquakesnail_rs.dylib"),
         os.path.join(base_dir, "rust", "quakesnail_rs", "target", "release", "quakesnail_rs.dll"),
         os.path.join(base_dir, "rust", "quakesnail_rs", "target", "debug", "quakesnail_rs.dll"),
         os.path.join(base_dir, "rust", "quakesnail_rs", "target", "release", "libquakesnail_rs.so"),

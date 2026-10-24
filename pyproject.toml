@@ -31,6 +31,10 @@ Repository = "https://github.com/sneed-and-feed/quakesnail"
 where = ["."]
 include = ["quakesnail*"]
 
+[tool.setuptools.package-data]
+quakesnail = ["*.dll", "*.so", "*.dylib"]
+"quakesnail.studio" = ["*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

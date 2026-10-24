@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: Skates
     given-names: Cthulhu
-version: 1.0.0
+version: 0.1.0
 date-released: 2026-10-24
 license: CC0-1.0
 repository-code: "https://github.com/sneed-and-feed/quakesnail"
