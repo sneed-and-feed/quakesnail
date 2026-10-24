@@ -567,6 +567,15 @@ def export_portable_studio(
 
     content = generate_studio_html(scenarios=scenarios)
     out_path.write_text(content, encoding="utf-8")
+
+    # Keep studio/index.html and studio/quakesnail_portable_studio.html synced for Cloudflare Workers Static Assets
+    if out_path.parent.resolve() == DEFAULT_STUDIO_PATH.parent.resolve():
+        index_path = out_path.parent / "index.html"
+        if out_path.name == "quakesnail_portable_studio.html":
+            index_path.write_text(content, encoding="utf-8")
+        elif out_path.name == "index.html":
+            DEFAULT_STUDIO_PATH.write_text(content, encoding="utf-8")
+
     return content
 
 
