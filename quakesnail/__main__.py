@@ -194,6 +194,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_eval.add_argument(
         "--out-dir",
+        "--output-dir",
+        dest="out_dir",
         type=str,
         default="results",
         help="Output directory for benchmark figures and JSON summaries",
@@ -207,6 +209,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_studio.add_argument(
         "--export-html",
+        "--export",
+        dest="export_html",
         type=str,
         metavar="PATH",
         help="Export zero-install self-contained HTML5/WebGL2 studio file (e.g. studio/quakesnail_portable_studio.html)",
@@ -230,6 +234,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_studio.add_argument(
         "--serve",
+        "--live",
+        dest="serve",
         action="store_true",
         help="Run blocking HTTP server serving Studio UI and live SeedLink/FDSN JSON endpoints",
     )
