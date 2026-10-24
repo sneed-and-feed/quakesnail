@@ -1,0 +1,347 @@
+{
+  "package": "quakesnail",
+  "version": "0.1.0",
+  "timestamp_utc": "2026-10-24T14:11:21Z",
+  "elapsed_seconds": 8.767494899919257,
+  "mode_a": {
+    "mode_a_passed": true,
+    "crustal_3d_rmse_km": 0.0013243161661454725,
+    "subduction_3d_rmse_km": 0.005645254474063733,
+    "deep_3d_rmse_km": 0.018838435101390053,
+    "t0_residual_s": 7.105205440893769e-05,
+    "mw_residual": 0.0,
+    "phase_association_purity_pct": 100.0,
+    "scenarios": [
+      {
+        "scenario": "Shallow Crustal (15 km)",
+        "true_hypo": [
+          36.5,
+          138.0,
+          15.0,
+          100.0
+        ],
+        "quakesnail_hypo": [
+          36.50000744184741,
+          137.99998980155166,
+          15.000487928948132,
+          100.00007105205441
+        ],
+        "quakesnail_3d_err_km": 0.0013243161661454725,
+        "legacy_3d_err_km": 41.34040460293507,
+        "t0_residual_s": 7.105205440893769e-05,
+        "passed": true
+      },
+      {
+        "scenario": "Subduction Megathrust (45 km)",
+        "true_hypo": [
+          38.3,
+          142.4,
+          45.0,
+          200.0
+        ],
+        "quakesnail_hypo": [
+          38.30001912592211,
+          142.3999721379005,
+          44.99537024460733,
+          200.00019835456624
+        ],
+        "quakesnail_3d_err_km": 0.005645254474063733,
+        "legacy_3d_err_km": 41.34888567639626,
+        "t0_residual_s": 0.0001983545662369579,
+        "passed": true
+      },
+      {
+        "scenario": "Deep Wadati-Benioff (420 km)",
+        "true_hypo": [
+          28.0,
+          140.0,
+          420.0,
+          500.0
+        ],
+        "quakesnail_hypo": [
+          28.000047687271728,
+          139.9999703686639,
+          420.01784113026224,
+          499.9976982572116
+        ],
+        "quakesnail_3d_err_km": 0.018838435101390053,
+        "legacy_3d_err_km": 410.6541846554105,
+        "depth_preserved_km": 420.01784113026224,
+        "passed": true
+      },
+      {
+        "scenario": "Magnitude Mw Recovery",
+        "true_mw": 6.8,
+        "estimated_mw": 6.8,
+        "mw_residual": 0.0,
+        "passed": true
+      },
+      {
+        "scenario": "Phase Association Purity (P & S)",
+        "num_clusters": 1,
+        "num_p_picks": 10,
+        "num_s_picks": 10,
+        "association_purity_pct": 100.0,
+        "passed": true
+      }
+    ]
+  },
+  "mode_b": {
+    "mode_b_passed": true,
+    "snr_db": 20.0,
+    "glitch_pct": 0.15,
+    "glitch_torture": {
+      "num_spikes_tested": 10000,
+      "legacy_gq_triggers": 64702,
+      "quakesnail_triggers": 0,
+      "glitch_immunity_passed": true
+    },
+    "phantom_split": {
+      "legacy_gq_clusters": 4,
+      "quakesnail_clusters": 1,
+      "phantom_splits_prevented": 3,
+      "passed": true
+    },
+    "rmse_sweep": {
+      "mean_quakesnail_3d_rmse_km": 2.195884145389821,
+      "mean_legacy_gq_3d_rmse_km": 68.77198498375284,
+      "overall_reduction_pct": 96.80700775772489,
+      "superiority_passed": true,
+      "sweep_records": [
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.0,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 2.8225330688053085,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 95.41974439566836
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.0,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 0.7982480804248241,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 98.83221507464914
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.0,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 0.6020033570953243,
+          "legacy_gq_3d_rmse_km": 89.42878626314908,
+          "rmse_reduction_pct": 99.32683492390929
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.05,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.0877921024170365,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.98929623237582
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.05,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 3.9176581460256448,
+          "legacy_gq_3d_rmse_km": 42.539381742374175,
+          "rmse_reduction_pct": 90.7905146112568
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.05,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 0.36353543320843407,
+          "legacy_gq_3d_rmse_km": 77.86257487654932,
+          "rmse_reduction_pct": 99.53310633024296
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.15,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.4935611353070564,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.3308359622379
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.15,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 2.785837740136291,
+          "legacy_gq_3d_rmse_km": 63.7749797873351,
+          "rmse_reduction_pct": 95.63177009318392
+        },
+        {
+          "geometry": "dense_regional",
+          "dropout": 0.15,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 2.447839668091015,
+          "legacy_gq_3d_rmse_km": 75.02536680391839,
+          "rmse_reduction_pct": 96.73731729364478
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.0,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.64324320021738,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.08793991816653
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.0,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 2.45634453278548,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 96.4065280115321
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.0,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 1.352229576646345,
+          "legacy_gq_3d_rmse_km": 89.42878626314908,
+          "rmse_reduction_pct": 98.48792583109946
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.05,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.5753769629146683,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.1980696159143
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.05,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 0.6022283163921676,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 99.11897921617559
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.05,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 1.0789342413937433,
+          "legacy_gq_3d_rmse_km": 89.42878626314908,
+          "rmse_reduction_pct": 98.79352690953569
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.15,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.549077094020263,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.24074763560807
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.15,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 1.601454270590402,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 97.6571767578333
+        },
+        {
+          "geometry": "sparse_continental",
+          "dropout": 0.15,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 3.724703983091504,
+          "legacy_gq_3d_rmse_km": 71.65611712264173,
+          "rmse_reduction_pct": 94.80197346345665
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.0,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.5929422548847114,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.16956560018578
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.0,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 1.0734203909186528,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 98.42965591547441
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.0,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 1.0672857549293773,
+          "legacy_gq_3d_rmse_km": 89.42878626314908,
+          "rmse_reduction_pct": 98.80655234234219
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.05,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 4.403652426520912,
+          "legacy_gq_3d_rmse_km": 35.78490360713404,
+          "rmse_reduction_pct": 87.69410566291701
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.05,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 0.7740771028375598,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 98.86757563980375
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.05,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 1.0391615626789243,
+          "legacy_gq_3d_rmse_km": 75.02536680391839,
+          "rmse_reduction_pct": 98.61491971722735
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.15,
+          "true_depth_km": 15.0,
+          "quakesnail_3d_rmse_km": 3.686751467492302,
+          "legacy_gq_3d_rmse_km": 61.62392042347983,
+          "rmse_reduction_pct": 94.01733703056065
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.15,
+          "true_depth_km": 40.0,
+          "quakesnail_3d_rmse_km": 0.8539909593005345,
+          "legacy_gq_3d_rmse_km": 68.35574454645345,
+          "rmse_reduction_pct": 98.75066687523216
+        },
+        {
+          "geometry": "linear_coastal",
+          "dropout": 0.15,
+          "true_depth_km": 75.0,
+          "quakesnail_3d_rmse_km": 0.8949890963993054,
+          "legacy_gq_3d_rmse_km": 85.97818355184646,
+          "rmse_reduction_pct": 98.95905093661393
+        }
+      ]
+    }
+  },
+  "spatial_indexing_benchmark": {
+    "quakesnail_kdtree_ms": 1.3300999999046326,
+    "legacy_gq_linear_43k_scan_ms": 826.5766999684274,
+    "speedup_factor": 621.4395158466976,
+    "zero_people_felt_in_quakesnail": true
+  },
+  "artifacts_generated": {
+    "summary_json": "results\\quakesnail_evaluation_summary.json",
+    "atlas_receipts_json": "results\\darksnail_atlas_receipts.json",
+    "figures": [
+      "results\\audit_waveform_picker.png",
+      "results\\audit_hypocenter_residuals.png",
+      "results\\audit_benchmark_comparison.png",
+      "results\\audit_shakemap_intensity.png"
+    ]
+  },
+  "all_passed": true
+}

@@ -1,0 +1,135 @@
+name: QuakeSnail CI, Rust SIMD Kernel & Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    name: Build, Rust SIMD, Pytest & Math Audit (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        python-version: [ '3.11', '3.12' ]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+
+      - name: Set up Rust Stable Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo Registry and Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/quakesnail_rs/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/quakesnail_rs/Cargo.toml', 'rust/quakesnail_rs/src/**') }}
+
+      - name: Test & Build `#![no_std]` Rust SIMD C-ABI Kernel
+        run: |
+          cargo test --manifest-path rust/quakesnail_rs/Cargo.toml --release
+          cargo build --manifest-path rust/quakesnail_rs/Cargo.toml --release
+
+      - name: Install Python Package & Dev Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Verify Native Rust C-ABI Bridge Auto-Detection & Static Arena Bound
+        run: |
+          python -c "from quakesnail._quakesnail_native import is_native_available, get_native_lib, QuakeSnailNativeBridge; assert is_native_available(), 'Native Rust C-ABI bridge failed to load!'; b = QuakeSnailNativeBridge(); assert b.use_native; sz = int(get_native_lib().quakesnail_get_arena_size_bytes()); print('Loaded native C-ABI, Arena bytes:', sz); assert 0 < sz <= 2097152"
+
+      - name: Verify Machine-Checked Runtime Invariants (`quakesnail verify-theorems`)
+        run: quakesnail verify-theorems
+
+      - name: Run 21-Rule GFM & KaTeX Math Compliance Audit
+        run: python scripts/audit_gfm_math.py README.md
+
+      - name: Export & Validate Portable WebGL2 3D Globe & EEW Studio
+        run: |
+          quakesnail studio --export-html studio/quakesnail_portable_studio.html
+          python -c "import pathlib, re, subprocess; p = pathlib.Path('studio/quakesnail_portable_studio.html'); assert p.stat().st_size > 50000; html = p.read_text(encoding='utf-8'); scripts = re.findall(r'<script[^>]*>(.*?)</script>', html, flags=re.S); assert scripts; tmp = pathlib.Path('results/_ci_studio_check.js'); tmp.parent.mkdir(exist_ok=True); tmp.write_text('\n'.join(scripts), encoding='utf-8'); subprocess.run(['node', '--check', str(tmp)], check=True); tmp.unlink()"
+
+      - name: Run Full Pytest Verification & Adversarial Challenge Suite
+        run: pytest tests/ -v
+
+      - name: Run Mode A & Mode B Blind Referee Benchmarks (`quakesnail evaluate --all`)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: quakesnail evaluate --all --output-dir results
+
+      - name: Upload Native C-ABI Library, Studio & Benchmark Artifacts
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quakesnail-${{ matrix.os }}-artifacts
+          path: |
+            rust/quakesnail_rs/target/release/libquakesnail_rs.so
+            rust/quakesnail_rs/target/release/libquakesnail_rs.dylib
+            rust/quakesnail_rs/target/release/quakesnail_rs.dll
+            studio/quakesnail_portable_studio.html
+            results/quakesnail_evaluation_summary.json
+            results/darksnail_atlas_receipts.json
+
+  release:
+    name: Publish GitHub Release
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build Python Wheel & Source Distribution
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Download Cross-Platform Native Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+            studio/quakesnail_portable_studio.html
+            results/quakesnail_evaluation_summary.json
+            results/darksnail_atlas_receipts.json
+            results/audit_waveform_picker.png
+            results/audit_hypocenter_residuals.png
+            results/audit_benchmark_comparison.png
+            results/audit_shakemap_intensity.png
+            release-assets/**/libquakesnail_rs.so
+            release-assets/**/libquakesnail_rs.dylib
+            release-assets/**/quakesnail_rs.dll
+          draft: false
+          prerelease: false
+          generate_release_notes: true

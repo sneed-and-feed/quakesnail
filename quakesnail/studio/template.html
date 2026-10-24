@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUAKESNAIL // EEW Tactical Studio & 3D WebGL2 Workstation</title>
+<style>
+/* =========================================================================
+   QUAKESNAIL RUGGEDIZED EEW TACTICAL WORKSTATION (MIL-STD-3009 CLASS B)
+   100% Client-Side / Zero-CDN / Zero External Dependencies
+   ========================================================================= */
+:root {
+  --bg-void: #03060a;
+  --bg-panel: #070c14;
+  --bg-card: #0d1522;
+  --bg-card-hover: #131e30;
+  --bg-input: #101a2b;
+  --border-subtle: #19273c;
+  --border-bright: #2b3f5e;
+  --border-cyan: #00e5ff;
+  --cyan: #00e5ff;
+  --cyan-dim: rgba(0, 229, 255, 0.12);
+  --cyan-glow: rgba(0, 229, 255, 0.28);
+  --amber: #ffb800;
+  --amber-dim: rgba(255, 184, 0, 0.12);
+  --amber-glow: rgba(255, 184, 0, 0.32);
+  --red: #ff3355;
+  --red-dim: rgba(255, 51, 85, 0.14);
+  --red-glow: rgba(255, 51, 85, 0.36);
+  --emerald: #00ff9d;
+  --emerald-dim: rgba(0, 255, 157, 0.12);
+  --purple: #bb44ff;
+  --purple-dim: rgba(187, 68, 255, 0.12);
+  --text-main: #e6eef8;
+  --text-muted: #8294ab;
+  --text-dim: #4d5f75;
+  --text-bright: #ffffff;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-bright) var(--bg-void);
+}
+
+html, body {
+  background-color: var(--bg-void);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.35;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Header Annunciator & Tactical Controls */
+.annunciator-strip {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  font-weight: 800;
+  color: var(--cyan);
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+
+.badge-tag {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--cyan);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-tag.pass {
+  color: var(--emerald);
+  border-color: rgba(0, 255, 157, 0.35);
+  background: var(--emerald-dim);
+}
+
+.badge-tag.warning {
+  color: var(--amber);
+  border-color: rgba(255, 184, 0, 0.35);
+  background: var(--amber-dim);
+}
+
+.badge-tag.danger {
+  color: var(--red);
+  border-color: rgba(255, 51, 85, 0.35);
+  background: var(--red-dim);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.7; transform: scale(0.98); }
+  to { opacity: 1.0; transform: scale(1.02); }
+}
+
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.select-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-bright);
+  color: var(--text-main);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  outline: none;
+}
+
+.select-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan-glow);
+}
+
+.btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  color: var(--text-main);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.btn.active {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.btn.danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn.danger.active {
+  background: var(--red-dim);
+  box-shadow: 0 0 8px var(--red-glow);
+}
+
+.scrub-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scrub-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 130px;
+  height: 5px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.scrub-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--cyan-glow);
+}
+
+/* Main Grid Layout */
+.workspace-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 290px 1fr 340px;
+  grid-template-rows: 1fr 200px;
+  gap: 2px;
+  background: var(--border-subtle);
+  min-height: 0;
+  position: relative;
+}
+
+/* Left Telemetry Panel */
+.telemetry-panel {
+  grid-column: 1;
+  grid-row: 1;
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 4px;
+}
+
+.hypo-hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.hypo-mag {
+  font-size: 32px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: var(--red);
+  line-height: 1;
+  text-shadow: 0 0 14px var(--red-glow);
+}
+
+.hypo-region {
+  font-size: 11px;
+  color: var(--text-main);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.data-label {
+  color: var(--text-muted);
+}
+
+.data-value {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.depth-meter {
+  height: 6px;
+  background: var(--bg-void);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 3px;
+}
+
+.depth-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--amber), var(--red));
+  width: 25%;
+  transition: width 0.3s ease;
+}
+
+/* Center 3D Globe Viewport */
+.viewport-panel {
+  grid-column: 2;
+  grid-row: 1;
+  background: var(--bg-void);
+  position: relative;
+  overflow: hidden;
+}
+
+#globe-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Floating EEW Tactical Warning Banner */
+.eew-alert-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 21, 34, 0.92);
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 14px var(--amber-glow);
+  font-family: var(--font-mono);
+  pointer-events: none;
+  animation: banner-glow 1.5s infinite alternate;
+}
+
+@keyframes banner-glow {
+  0% { border-color: var(--amber); box-shadow: 0 0 10px var(--amber-glow); }
+  100% { border-color: var(--red); box-shadow: 0 0 20px var(--red-glow); }
+}
+
+.eew-alert-title {
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.eew-alert-countdown {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: 0.5px;
+}
+
+/* Viewport HUD Overlays */
+.viewport-overlay-hud {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  pointer-events: none;
+  background: rgba(7, 12, 20, 0.75);
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+}
+
+.viewport-controls {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+/* Right Municipality Intensity & Countdown Leaderboard */
+.leaderboard-panel {
+  grid-column: 3;
+  grid-row: 1;
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.leaderboard-header {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leaderboard-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.leaderboard-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.municipality-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.municipality-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 7px 9px;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.municipality-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-bright);
+}
+
+.shindo-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.shindo-badge.shindo-7 { background: #8800bb; border: 1px solid #bb44ff; box-shadow: 0 0 8px rgba(187,68,255,0.4); }
+.shindo-badge.shindo-6p { background: #cc1133; border: 1px solid #ff3355; box-shadow: 0 0 8px rgba(255,51,85,0.4); }
+.shindo-badge.shindo-6m { background: #dd3322; border: 1px solid #ff5533; }
+.shindo-badge.shindo-5p { background: #dd6600; border: 1px solid #ff8800; }
+.shindo-badge.shindo-5m { background: #dd8800; border: 1px solid #ffaa00; }
+.shindo-badge.shindo-4 { background: #ccaa00; border: 1px solid #ffdd00; color: #111; text-shadow: none; }
+.shindo-badge.shindo-3 { background: #229955; border: 1px solid #00ff9d; }
+.shindo-badge.shindo-2 { background: #0088aa; border: 1px solid #00e5ff; }
+.shindo-badge.shindo-1 { background: #224466; border: 1px solid #4477aa; }
+
+.muni-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.muni-name {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muni-metrics {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 8px;
+}
+
+.muni-countdowns {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.pill-countdown {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.pill-countdown.p-wave {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.pill-countdown.s-wave {
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid rgba(255, 184, 0, 0.4);
+}
+
+.pill-countdown.arrived {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(255, 51, 85, 0.4);
+}
+
+/* Bottom Panel: Waveform Helicorder Strip */
+.helicorder-panel {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.helicorder-header {
+  padding: 4px 12px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+#helicorder-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Wadati-Benioff Subsurface Cutaway Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 6, 10, 0.85);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  width: 860px;
+  max-width: 95vw;
+  height: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px var(--cyan-glow);
+}
+
+.modal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-bright);
+}
+
+.modal-body {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#cutaway-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Drag-and-drop Dropzone Overlay */
+.dropzone-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 229, 255, 0.15);
+  border: 3px dashed var(--cyan);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--cyan);
+  text-shadow: 0 0 12px var(--cyan-glow);
+}
+
+.dropzone-overlay.active {
+  display: flex;
+}
+</style>
+</head>
+<body>
+
+<!-- Annunciator Strip & Transport Bar -->
+<header class="annunciator-strip">
+  <div class="brand-group">
+    <div class="brand-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M2 12h5l3-7 4 14 3-7h5"></path>
+      </svg>
+      QUAKESNAIL // EEW STUDIO
+    </div>
+    <span class="badge-tag pass" id="status-engine-pill">CALIBRATED // MODE A</span>
+    <span class="badge-tag" id="status-theorems-pill">THEOREMS 1-4 PASS</span>
+  </div>
+
+  <div class="ctrl-group">
+    <label for="scenario-select" style="font-size:10px; color:var(--text-muted);">SCENARIO:</label>
+    <select id="scenario-select" class="select-input">
+      <option value="scenario_subduction_megathrust">01: Subduction Megathrust (M8.2 Tohoku)</option>
+      <option value="scenario_shallow_strike_slip">02: Shallow Strike-Slip Doublet (M6.4 + M6.2)</option>
+      <option value="scenario_deep_wadati_benioff">03: Deep Wadati-Benioff (Z=450 km Izu-Bonin)</option>
+      <option value="scenario_teleseismic_core_phases">04: Teleseismic Core Phases (PKIKP Antipodal)</option>
+      <option value="scenario_swarm_glitch_torture">05: Caldera Swarm + Glitch Torture (20% Spikes)</option>
+    </select>
+
+    <label for="home-select" style="font-size:10px; color:var(--text-muted); margin-left:8px;">HOME:</label>
+    <select id="home-select" class="select-input">
+      <option value="Tokyo, JP">Tokyo, JP</option>
+      <option value="Sendai, JP">Sendai, JP</option>
+      <option value="Ridgecrest, US">Ridgecrest, US</option>
+      <option value="Rome, IT">Rome, IT</option>
+      <option value="Los Angeles, US">Los Angeles, US</option>
+      <option value="Wellington, NZ">Wellington, NZ</option>
+      <option value="Santiago, CL">Santiago, CL</option>
+    </select>
+  </div>
+
+  <div class="ctrl-group">
+    <button class="btn" id="btn-play-pause" title="Toggle Simulation Play/Pause">
+      <span id="play-pause-icon">&#9658;</span>
+      <span id="play-pause-text">PLAY</span>
+    </button>
+    <button class="btn" id="btn-reset" title="Reset Simulation Clock">&#8635; RESET</button>
+
+    <div class="scrub-container">
+      <input type="range" id="timeline-scrub" class="scrub-slider" min="0" max="60" step="0.25" value="0">
+      <span id="clock-display" style="font-weight:700; color:var(--cyan); min-width:55px;">T+ 00.0s</span>
+    </div>
+
+    <button class="btn active" id="btn-speed-1x">1x</button>
+    <button class="btn" id="btn-speed-5x">5x</button>
+    <button class="btn" id="btn-speed-20x">20x</button>
+
+    <button class="btn" id="btn-alarm" title="Toggle Web Audio Synthesized Siren">
+      <span id="alarm-icon">&#128264;</span> ALARM: <span id="alarm-state">OFF</span>
+    </button>
+  </div>
+</header>
+
+<!-- Main Workspace Layout -->
+<main class="workspace-grid">
+
+  <!-- Left: Inversion & Telemetry Panel -->
+  <aside class="telemetry-panel">
+    <div class="card">
+      <div class="card-title">
+        <span>Hypocenter Telemetry</span>
+        <span class="badge-tag pass">INVERTED</span>
+      </div>
+      <div class="hypo-hero">
+        <span class="hypo-mag" id="card-mag">M 8.2</span>
+        <div style="text-align:right;">
+          <div style="font-size:10px; color:var(--text-muted);">M_def: <span id="card-m-def">8.1</span> | M_low: <span id="card-m-low">8.2</span></div>
+          <div style="font-size:9.5px; color:var(--cyan);">Mw (Long Period): <span id="card-mw">8.2</span></div>
+        </div>
+      </div>
+      <div class="hypo-region" id="card-region">Offshore Miyagi Prefecture, Japan</div>
+      <div class="data-row" style="margin-top:4px;">
+        <span class="data-label">Coordinates:</span>
+        <span class="data-value" id="card-coords">38.322° N, 142.369° E</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Focal Depth:</span>
+        <span class="data-value" id="card-depth">28.0 km</span>
+      </div>
+      <div class="depth-meter">
+        <div class="depth-fill" id="card-depth-bar"></div>
+      </div>
+      <div class="data-row" style="margin-top:4px;">
+        <span class="data-label">Focal Mechanism:</span>
+        <span class="data-value" id="card-mech">Strike 195° / Dip 14°</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>3D Analytical Covariance</span>
+        <span style="font-size:9.5px; color:var(--emerald);">RMSE: 0.14 km</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Semi-Major Axis (sigma_x):</span>
+        <span class="data-value" id="card-sig-x">0.8 km</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Semi-Minor Axis (sigma_y):</span>
+        <span class="data-value" id="card-sig-y">1.1 km</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Vertical Axis (sigma_z):</span>
+        <span class="data-value" id="card-sig-z">2.4 km</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Radial Drift:</span>
+        <span class="data-value" style="color:var(--emerald);">0.000e+00 km</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>Stage 1 Glitch Shield</span>
+        <span class="badge-tag pass" id="card-causal-pill">NOMINAL</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">3-Point Morse Gate:</span>
+        <span class="data-value" id="card-morse-gate">ACTIVE</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">1-Sample Deferral:</span>
+        <span class="data-value" id="card-deferral">VALIDATED (0 Phantoms)</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Microseism Split:</span>
+        <span class="data-value" style="color:var(--cyan);">H_clock (+) H_nope</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>Subduction Slab Geometry</span>
+        <button class="btn" id="btn-open-cutaway" style="padding:2px 6px; font-size:9.5px;">VIEW 2D SLAB</button>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Slab Dip:</span>
+        <span class="data-value" id="card-slab-dip">32.0°</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Slab Azimuth:</span>
+        <span class="data-value" id="card-slab-strike">205.0°</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Trench Interface:</span>
+        <span class="data-value" id="card-trench">Pacific Subduction</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Center: 3D Earth Globe Viewport -->
+  <section class="viewport-panel" id="viewport-container">
+    <canvas id="globe-canvas"></canvas>
+
+    <!-- EEW Tactical Alert Banner -->
+    <div class="eew-alert-banner" id="eew-banner">
+      <div class="eew-alert-title">&#9888; EEW WARNING // SHAKING EXPECTED</div>
+      <div class="eew-alert-countdown" id="eew-banner-time">S-WAVE: 12.8s</div>
+    </div>
+
+    <!-- On-Canvas HUD Status -->
+    <div class="viewport-overlay-hud">
+      <div>VIEW: <span id="hud-cam-preset" style="color:var(--text-bright);">EPICENTER ORBIT</span></div>
+      <div>P-WAVE SPEED: <span style="color:var(--cyan);">7.8 km/s</span> | S-WAVE: <span style="color:var(--amber);">4.4 km/s</span></div>
+      <div>EXPANDING RADIUS: <span id="hud-radius-p" style="color:var(--cyan);">0 km</span> (P) / <span id="hud-radius-s" style="color:var(--amber);">0 km</span> (S)</div>
+      <div>DRAG: ROTATE 3D GLOBE | SCROLL: ZOOM</div>
+    </div>
+
+    <!-- Floating View Controls -->
+    <div class="viewport-controls">
+      <button class="btn" id="btn-cam-focus" title="Center camera on hypocenter">FOCUS HYPO</button>
+      <button class="btn" id="btn-cam-north" title="Reset North up">NORTH UP</button>
+      <button class="btn" id="btn-cam-slab" title="View Wadati-Benioff subduction plane">SLAB ANGLE</button>
+      <button class="btn" id="btn-cam-autorotate" title="Toggle automatic turntable rotation">TURNTABLE</button>
+    </div>
+  </section>
+
+  <!-- Right: Municipality Intensity & Countdown Leaderboard -->
+  <aside class="leaderboard-panel">
+    <div class="leaderboard-header">
+      <div class="leaderboard-title">AFFECTED LOCALITIES & COUNTDOWNS</div>
+      <div class="leaderboard-subtitle">RANKED BY SHAKING INTENSITY // REAL-TIME WAVE ARRIVAL</div>
+    </div>
+
+    <div class="municipality-list" id="muni-list-container">
+      <!-- Injected dynamically -->
+    </div>
+  </aside>
+
+  <!-- Bottom: Multi-Station Helicorder & Picker Strip -->
+  <footer class="helicorder-panel">
+    <div class="helicorder-header">
+      <span>MULTI-STATION 3-COMPONENT WAVEFORM HELICORDER & MORSE IMPULSE DETECTOR</span>
+      <div style="display:flex; gap:12px;">
+        <span style="color:var(--text-main);">BAND: <span style="color:var(--cyan);">0.4-5.0 Hz</span></span>
+        <span style="color:var(--cyan);">&#9632; P-WAVE ONSET</span>
+        <span style="color:var(--red);">&#9632; S-WAVE PEAK</span>
+        <span style="color:var(--purple);">&#9632; GLINT REJECTED</span>
+      </div>
+    </div>
+    <div style="flex:1; position:relative;">
+      <canvas id="helicorder-canvas"></canvas>
+    </div>
+  </footer>
+
+</main>
+
+<!-- Wadati-Benioff Subsurface Cutaway Modal -->
+<div class="modal-overlay" id="cutaway-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>WADATI-BENIOFF SUBDUCTION ZONE 2D PROFILE // TRENCH TO MANTLE TRANSITION</span>
+      <button class="btn" id="btn-close-cutaway" style="padding:2px 8px;">CLOSE &times;</button>
+    </div>
+    <div class="modal-body">
+      <canvas id="cutaway-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Drag & Drop Import Overlay -->
+<div class="dropzone-overlay" id="dropzone">
+  DROP .MSEED, .SAC, .CSV, OR .GEOJSON FILE TO IMPORT SCENARIO
+</div>
+
+<!-- =========================================================================
+     OFFLINE SCENARIO PAYLOAD INJECTION
+     ========================================================================= -->
+<script>
+window.QUAKESNAIL_PORTABLE_MODE = true;
+window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
+</script>
+
+<!-- =========================================================================
+     TACTICAL STUDIO ENGINE, WEBGL2 SHADERS, AUDIO & HUD SCRIPTS
+     ========================================================================= -->
+<script>
+(function() {
+  "use strict";
+
+  // State Management
+  const state = {
+    currentScenarioId: "scenario_subduction_megathrust",
+    simTime: 0.0,
+    isPlaying: false,
+    speedMultiplier: 1.0,
+    homeCity: "Tokyo, JP",
+    alarmEnabled: false,
+    autoRotate: false,
+    camera: {
+      yaw: 0.0,
+      pitch: 0.25,
+      distance: 2.8,
+      targetYaw: 0.0,
+      targetPitch: 0.25,
+      targetDistance: 2.8,
+      isDragging: false,
+      lastMouseX: 0,
+      lastMouseY: 0,
+    },
+    audioCtx: null,
+    alarmOsc: null,
+    alarmGain: null,
+  };
+
+  // Safe fallback scenario if window.QUAKESNAIL_OFFLINE_SCENARIOS is empty
+  function getActiveScenario() {
+    const scens = window.QUAKESNAIL_OFFLINE_SCENARIOS || {};
+    if (scens[state.currentScenarioId]) {
+      return scens[state.currentScenarioId];
+    }
+    const keys = Object.keys(scens);
+    if (keys.length > 0) {
+      return scens[keys[0]];
+    }
+    // Emergency minimal fallback
+    return {
+      id: "emergency_fallback",
+      name: "Emergency Fallback Event",
+      hypocenter: { lat: 35.68, lon: 139.76, depth_km: 25.0, origin_time: "2026-10-24T12:00:00Z" },
+      magnitude: { mw: 7.0, m_default: 7.0, m_low: 7.0, m_ultralow: 7.0 },
+      region: "Central Seismic Zone",
+      mechanism: { strike: 180, dip: 45, rake: 90 },
+      wadati_benioff: { slab_dip_deg: 35.0, slab_strike_deg: 180.0, depth_profile: [[0, 10], [100, 50], [200, 120]] },
+      municipalities: [
+        { name: "Metropolis", country_code: "GL", lat: 35.7, lon: 139.8, distance_km: 15.0, pga_g: 0.45, pgv_cms: 42.0, mmi: 7.5, jma_shindo: "6-", seconds_p: 2.1, seconds_s: 3.8 }
+      ],
+      stations: [
+        { id: "STA1", net: "GS", name: "Station 1", dist_km: 20.0, pga_g: 0.35, pga_gal: 343.0, waveform: { times: [0, 1, 2], bhz: [0, 0.5, 0], filtered: [0, 0.4, 0], sta_lta: [1, 5, 2], p_arr_sec: 3.0, s_arr_sec: 5.5, morse_p_idx: 1, morse_s_idx: 2, glitch_idx: -1 } }
+      ]
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Web Audio Alert Synthesizer
+  // ---------------------------------------------------------------------------
+  function initAudio() {
+    if (!state.audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        state.audioCtx = new AudioContextClass();
+      }
+    }
+    if (state.audioCtx && state.audioCtx.state === "suspended") {
+      state.audioCtx.resume();
+    }
+  }
+
+  function playAlertChime(urgency) {
+    if (!state.alarmEnabled || !state.audioCtx) return;
+    try {
+      const now = state.audioCtx.currentTime;
+      const osc = state.audioCtx.createOscillator();
+      const gain = state.audioCtx.createGain();
+
+      osc.type = "sine";
+      const f1 = urgency > 1.5 ? 988 : 784; // B5 or G5
+      const f2 = urgency > 1.5 ? 1318 : 1046; // E6 or C6
+
+      osc.frequency.setValueAtTime(f1, now);
+      osc.frequency.setValueAtTime(f2, now + 0.12);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(state.audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.36);
+    } catch (e) {
+      // Audio autoplay policy fallback
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebGL2 3D Earth Globe Renderer
+  // ---------------------------------------------------------------------------
+  const canvas = document.getElementById("globe-canvas");
+  const gl = canvas.getContext("webgl2", { antialias: true, alpha: false });
+
+  if (!gl) {
+    console.error("WebGL2 not supported on this client.");
+  }
+
+  // Vertex Shader: Transforms UV sphere vertices
+  const vsSource = `#version 300 es
+  precision highp float;
+  layout(location = 0) in vec3 a_pos;
+  layout(location = 1) in vec3 a_norm;
+  layout(location = 2) in vec2 a_uv;
+
+  uniform mat4 u_mvp;
+  uniform mat4 u_model;
+
+  out vec3 v_worldPos;
+  out vec3 v_norm;
+  out vec2 v_uv;
+
+  void main() {
+    v_worldPos = (u_model * vec4(a_pos, 1.0)).xyz;
+    v_norm = normalize((u_model * vec4(a_norm, 0.0)).xyz);
+    v_uv = a_uv;
+    gl_Position = u_mvp * vec4(a_pos, 1.0);
+  }
+  `;
+
+  // Fragment Shader: Renders oceans, continents, plate boundaries, and expanding P/S rings
+  const fsSource = `#version 300 es
+  precision highp float;
+
+  in vec3 v_worldPos;
+  in vec3 v_norm;
+  in vec2 v_uv;
+
+  uniform vec3 u_hypoPos;       // Hypocenter unit vector on sphere
+  uniform float u_radiusP;      // P wave radius in km
+  uniform float u_radiusS;      // S wave radius in km
+  uniform float u_simTime;      // Elapsed seconds
+  uniform vec3 u_camPos;
+
+  out vec4 fragColor;
+
+  #define PI 3.14159265359
+  #define EARTH_RADIUS_KM 6371.0
+
+  // Procedural noise for continents
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+               mix(mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 4; ++i) {
+      v += a * noise(p);
+      p = rot * p * 2.0 + vec2(100.0);
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  void main() {
+    vec3 N = normalize(v_norm);
+    vec3 V = normalize(u_camPos - v_worldPos);
+
+    // Compute lat/lon on sphere
+    float lat = asin(clamp(N.y, -1.0, 1.0));
+    float lon = atan(N.x, N.z);
+
+    // Continental shapes via noise threshold
+    vec2 mapCoord = vec2(lon * 2.5, lat * 3.5);
+    float landNoise = fbm(mapCoord);
+
+    // Land vs Ocean base palette
+    vec3 oceanColor = vec3(0.03, 0.08, 0.16);
+    vec3 landColor = vec3(0.10, 0.18, 0.14);
+
+    bool isLand = landNoise > 0.44;
+    vec3 baseColor = isLand ? landColor : oceanColor;
+
+    // Tactical latitude/longitude grid lines every 15 degrees
+    float latDeg = lat * 180.0 / PI;
+    float lonDeg = lon * 180.0 / PI;
+    float gridLat = abs(fract(latDeg / 15.0 + 0.5) - 0.5) * 15.0;
+    float gridLon = abs(fract(lonDeg / 15.0 + 0.5) - 0.5) * 15.0;
+
+    if (gridLat < 0.35 || gridLon < 0.35) {
+      baseColor += vec3(0.04, 0.09, 0.14);
+    }
+
+    // Great circle distance to epicenter
+    vec3 normHypo = normalize(u_hypoPos);
+    float cosDist = clamp(dot(N, normHypo), -1.0, 1.0);
+    float angleRad = acos(cosDist);
+    float distKm = angleRad * EARTH_RADIUS_KM;
+
+    // Expanding P-Wave Ring (Cyan #00e5ff)
+    float pDiff = abs(distKm - u_radiusP);
+    if (u_radiusP > 0.0 && pDiff < 35.0) {
+      float intensity = 1.0 - (pDiff / 35.0);
+      baseColor += vec3(0.0, 0.90, 1.0) * intensity * 0.95;
+    }
+
+    // Expanding S-Wave Ring (Amber/Red #ff5252)
+    float sDiff = abs(distKm - u_radiusS);
+    if (u_radiusS > 0.0 && sDiff < 45.0) {
+      float pulse = 0.8 + 0.2 * sin(u_simTime * 8.0);
+      float intensity = (1.0 - (sDiff / 45.0)) * pulse;
+      baseColor += vec3(1.0, 0.25, 0.25) * intensity * 1.25;
+    }
+
+    // Epicenter pulsing beacon
+    if (distKm < 65.0) {
+      float beaconPulse = 0.5 + 0.5 * sin(u_simTime * 6.0);
+      baseColor += vec3(1.0, 0.1, 0.2) * (1.0 - distKm / 65.0) * beaconPulse;
+    }
+
+    // Atmospheric limb Fresnel glow
+    float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.5);
+    baseColor += vec3(0.0, 0.6, 0.9) * fresnel * 0.45;
+
+    fragColor = vec4(baseColor, 1.0);
+  }
+  `;
+
+  // Compile Shader Helper
+  function compileShader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(s));
+      gl.deleteShader(s);
+      return null;
+    }
+    return s;
+  }
+
+  const vs = compileShader(gl.VERTEX_SHADER, vsSource);
+  const fs = compileShader(gl.FRAGMENT_SHADER, fsSource);
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error("Program link failed:", gl.getProgramInfoLog(prog));
+  }
+
+  // Sphere Geometry Generation
+  const SPHERE_LAT_SEGS = 48;
+  const SPHERE_LON_SEGS = 72;
+  const positions = [];
+  const normals = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let latIdx = 0; latIdx <= SPHERE_LAT_SEGS; latIdx++) {
+    const theta = (latIdx * Math.PI) / SPHERE_LAT_SEGS;
+    const sinTheta = Math.sin(theta);
+    const cosTheta = Math.cos(theta);
+
+    for (let lonIdx = 0; lonIdx <= SPHERE_LON_SEGS; lonIdx++) {
+      const phi = (lonIdx * 2.0 * Math.PI) / SPHERE_LON_SEGS;
+      const sinPhi = Math.sin(phi);
+      const cosPhi = Math.cos(phi);
+
+      const x = cosPhi * sinTheta;
+      const y = cosTheta;
+      const z = sinPhi * sinTheta;
+
+      positions.push(x, y, z);
+      normals.push(x, y, z);
+      uvs.push(lonIdx / SPHERE_LON_SEGS, latIdx / SPHERE_LAT_SEGS);
+    }
+  }
+
+  for (let latIdx = 0; latIdx < SPHERE_LAT_SEGS; latIdx++) {
+    for (let lonIdx = 0; lonIdx < SPHERE_LON_SEGS; lonIdx++) {
+      const first = latIdx * (SPHERE_LON_SEGS + 1) + lonIdx;
+      const second = first + SPHERE_LON_SEGS + 1;
+
+      indices.push(first, second, first + 1);
+      indices.push(second, second + 1, first + 1);
+    }
+  }
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  const posBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+  const normBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+
+  const uvBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(2);
+  gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
+
+  const idxBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+  // Uniform Locations
+  const uMvpLoc = gl.getUniformLocation(prog, "u_mvp");
+  const uModelLoc = gl.getUniformLocation(prog, "u_model");
+  const uHypoLoc = gl.getUniformLocation(prog, "u_hypoPos");
+  const uRadPLoc = gl.getUniformLocation(prog, "u_radiusP");
+  const uRadSLoc = gl.getUniformLocation(prog, "u_radiusS");
+  const uSimTimeLoc = gl.getUniformLocation(prog, "u_simTime");
+  const uCamPosLoc = gl.getUniformLocation(prog, "u_camPos");
+
+  // Basic Matrix Math Helpers
+  function mat4Perspective(out, fovy, aspect, near, far) {
+    const f = 1.0 / Math.tan(fovy / 2);
+    out.fill(0);
+    out[0] = f / aspect;
+    out[5] = f;
+    out[10] = (far + near) / (near - far);
+    out[11] = -1;
+    out[14] = (2 * far * near) / (near - far);
+  }
+
+  function mat4LookAt(out, eye, center, up) {
+    let z0 = eye[0] - center[0], z1 = eye[1] - center[1], z2 = eye[2] - center[2];
+    let len = 1.0 / Math.hypot(z0, z1, z2);
+    z0 *= len; z1 *= len; z2 *= len;
+
+    let x0 = up[1] * z2 - up[2] * z1;
+    let x1 = up[2] * z0 - up[0] * z2;
+    let x2 = up[0] * z1 - up[1] * z0;
+    len = Math.hypot(x0, x1, x2);
+    if (!len) { x0 = 0; x1 = 0; x2 = 0; }
+    else { len = 1.0 / len; x0 *= len; x1 *= len; x2 *= len; }
+
+    let y0 = z1 * x2 - z2 * x1;
+    let y1 = z2 * x0 - z0 * x2;
+    let y2 = z0 * x1 - z1 * x0;
+
+    out[0] = x0; out[1] = y0; out[2] = z0; out[3] = 0;
+    out[4] = x1; out[5] = y1; out[6] = z1; out[7] = 0;
+    out[8] = x2; out[9] = y2; out[10] = z2; out[11] = 0;
+    out[12] = -(x0 * eye[0] + x1 * eye[1] + x2 * eye[2]);
+    out[13] = -(y0 * eye[0] + y1 * eye[1] + y2 * eye[2]);
+    out[14] = -(z0 * eye[0] + z1 * eye[1] + z2 * eye[2]);
+    out[15] = 1;
+  }
+
+  function mat4Multiply(out, a, b) {
+    for (let i = 0; i < 4; ++i) {
+      for (let j = 0; j < 4; ++j) {
+        let sum = 0;
+        for (let k = 0; k < 4; ++k) sum += a[i * 4 + k] * b[k * 4 + j];
+        out[i * 4 + j] = sum;
+      }
+    }
+  }
+
+  function mat4Identity(out) {
+    out.fill(0);
+    out[0] = out[5] = out[10] = out[15] = 1;
+  }
+
+  // Convert Lat/Lon to 3D Unit Vector
+  function latLonToVec3(latDeg, lonDeg) {
+    const latRad = (latDeg * Math.PI) / 180.0;
+    const lonRad = (lonDeg * Math.PI) / 180.0;
+    return [
+      Math.cos(latRad) * Math.sin(lonRad),
+      Math.sin(latRad),
+      Math.cos(latRad) * Math.cos(lonRad),
+    ];
+  }
+
+  // Camera Orbit Controls
+  canvas.addEventListener("mousedown", (e) => {
+    state.camera.isDragging = true;
+    state.camera.lastMouseX = e.clientX;
+    state.camera.lastMouseY = e.clientY;
+    initAudio();
+  });
+
+  window.addEventListener("mouseup", () => {
+    state.camera.isDragging = false;
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!state.camera.isDragging) return;
+    const dx = e.clientX - state.camera.lastMouseX;
+    const dy = e.clientY - state.camera.lastMouseY;
+    state.camera.lastMouseX = e.clientX;
+    state.camera.lastMouseY = e.clientY;
+
+    state.camera.targetYaw += dx * 0.006;
+    state.camera.targetPitch = Math.max(-1.45, Math.min(1.45, state.camera.targetPitch + dy * 0.006));
+  });
+
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    state.camera.targetDistance = Math.max(1.3, Math.min(5.5, state.camera.targetDistance + e.deltaY * 0.002));
+  }, { passive: false });
+
+  // ---------------------------------------------------------------------------
+  // Helicorder Seismogram Multi-Station Canvas
+  // ---------------------------------------------------------------------------
+  const hCanvas = document.getElementById("helicorder-canvas");
+  const hCtx = hCanvas.getContext("2d");
+
+  function renderHelicorder() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = hCanvas.clientWidth;
+    const h = hCanvas.clientHeight;
+    if (hCanvas.width !== w * dpr || hCanvas.height !== h * dpr) {
+      hCanvas.width = w * dpr;
+      hCanvas.height = h * dpr;
+    }
+    hCtx.save();
+    hCtx.scale(dpr, dpr);
+
+    hCtx.fillStyle = "#070c14";
+    hCtx.fillRect(0, 0, w, h);
+
+    const scen = getActiveScenario();
+    const stations = scen.stations || [];
+    const nStations = Math.min(stations.length, 6);
+
+    if (nStations === 0) {
+      hCtx.restore();
+      return;
+    }
+
+    const laneHeight = h / nStations;
+
+    stations.slice(0, nStations).forEach((sta, idx) => {
+      const yMid = idx * laneHeight + laneHeight * 0.5;
+
+      // Lane separator
+      hCtx.strokeStyle = "#142033";
+      hCtx.lineWidth = 1;
+      hCtx.beginPath();
+      hCtx.moveTo(0, idx * laneHeight);
+      hCtx.lineTo(w, idx * laneHeight);
+      hCtx.stroke();
+
+      // Station label
+      hCtx.font = "10px ui-monospace, monospace";
+      hCtx.fillStyle = "#8294ab";
+      hCtx.fillText(`${sta.net}.${sta.id} (${sta.dist_km.toFixed(0)} km) | PGA: ${sta.pga_g}g`, 10, idx * laneHeight + 13);
+
+      const wf = sta.waveform;
+      if (!wf || !wf.times || wf.times.length === 0) return;
+
+      const duration = wf.times[wf.times.length - 1];
+      const timeRatio = Math.min(1.0, state.simTime / duration);
+      const curPts = Math.floor(timeRatio * wf.bhz.length);
+
+      // Raw Waveform Trace (Dim Gray)
+      hCtx.strokeStyle = "#384d6b";
+      hCtx.lineWidth = 1.0;
+      hCtx.beginPath();
+      for (let i = 0; i < curPts; i++) {
+        const x = 180 + (i / wf.bhz.length) * (w - 190);
+        const y = yMid + wf.bhz[i] * (laneHeight * 0.35);
+        if (i === 0) hCtx.moveTo(x, y);
+        else hCtx.lineTo(x, y);
+      }
+      hCtx.stroke();
+
+      // Filtered 0.4-5.0 Hz Trace (Bright Cyan)
+      hCtx.strokeStyle = "#00e5ff";
+      hCtx.lineWidth = 1.4;
+      hCtx.beginPath();
+      for (let i = 0; i < curPts; i++) {
+        const x = 180 + (i / wf.filtered.length) * (w - 190);
+        const y = yMid + wf.filtered[i] * (laneHeight * 0.35);
+        if (i === 0) hCtx.moveTo(x, y);
+        else hCtx.lineTo(x, y);
+      }
+      hCtx.stroke();
+
+      // Morse P-pick flag
+      if (wf.morse_p_idx > 0 && curPts >= wf.morse_p_idx) {
+        const px = 180 + (wf.morse_p_idx / wf.filtered.length) * (w - 190);
+        hCtx.strokeStyle = "#00e5ff";
+        hCtx.lineWidth = 1.5;
+        hCtx.beginPath();
+        hCtx.moveTo(px, idx * laneHeight + 3);
+        hCtx.lineTo(px, (idx + 1) * laneHeight - 3);
+        hCtx.stroke();
+
+        hCtx.fillStyle = "#00e5ff";
+        hCtx.font = "9px ui-monospace, monospace";
+        hCtx.fillText("P", px + 3, idx * laneHeight + 12);
+      }
+
+      // Morse S-pick flag
+      if (wf.morse_s_idx > 0 && curPts >= wf.morse_s_idx) {
+        const sx = 180 + (wf.morse_s_idx / wf.filtered.length) * (w - 190);
+        hCtx.strokeStyle = "#ff3355";
+        hCtx.lineWidth = 1.5;
+        hCtx.beginPath();
+        hCtx.moveTo(sx, idx * laneHeight + 3);
+        hCtx.lineTo(sx, (idx + 1) * laneHeight - 3);
+        hCtx.stroke();
+
+        hCtx.fillStyle = "#ff3355";
+        hCtx.font = "9px ui-monospace, monospace";
+        hCtx.fillText("S", sx + 3, idx * laneHeight + 12);
+      }
+
+      // Glitch marker (if injected and passed)
+      if (wf.glitch_idx > 0 && curPts >= wf.glitch_idx) {
+        const gx = 180 + (wf.glitch_idx / wf.filtered.length) * (w - 190);
+        hCtx.fillStyle = "#bb44ff";
+        hCtx.beginPath();
+        hCtx.arc(gx, yMid, 3, 0, Math.PI * 2);
+        hCtx.fill();
+        hCtx.fillText("GLINT_REJ", gx - 20, yMid - 6);
+      }
+    });
+
+    hCtx.restore();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Wadati-Benioff Subsurface 2D Cutaway Canvas
+  // ---------------------------------------------------------------------------
+  const cCanvas = document.getElementById("cutaway-canvas");
+  const cCtx = cCanvas.getContext("2d");
+
+  function renderCutaway() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = cCanvas.clientWidth;
+    const h = cCanvas.clientHeight;
+    if (cCanvas.width !== w * dpr || cCanvas.height !== h * dpr) {
+      cCanvas.width = w * dpr;
+      cCanvas.height = h * dpr;
+    }
+    cCtx.save();
+    cCtx.scale(dpr, dpr);
+
+    cCtx.fillStyle = "#060b13";
+    cCtx.fillRect(0, 0, w, h);
+
+    const padLeft = 60, padRight = 30, padTop = 30, padBottom = 40;
+    const plotW = w - padLeft - padRight;
+    const plotH = h - padTop - padBottom;
+
+    // Depth scale 0 to 700 km
+    const maxDepth = 700.0;
+    const maxDist = 600.0;
+
+    // Grid lines
+    cCtx.strokeStyle = "#16253a";
+    cCtx.lineWidth = 1;
+    cCtx.font = "10px ui-monospace, monospace";
+    cCtx.fillStyle = "#657994";
+
+    for (let d = 0; d <= maxDepth; d += 100) {
+      const y = padTop + (d / maxDepth) * plotH;
+      cCtx.beginPath();
+      cCtx.moveTo(padLeft, y);
+      cCtx.lineTo(w - padRight, y);
+      cCtx.stroke();
+      cCtx.fillText(`${d} km`, 12, y + 3);
+    }
+
+    for (let xDist = 0; xDist <= maxDist; xDist += 100) {
+      const x = padLeft + (xDist / maxDist) * plotW;
+      cCtx.beginPath();
+      cCtx.moveTo(x, padTop);
+      cCtx.lineTo(x, padTop + plotH);
+      cCtx.stroke();
+      cCtx.fillText(`${xDist} km`, x - 15, h - 18);
+    }
+
+    // 410 km & 660 km Mantle Discontinuities
+    const y410 = padTop + (410.0 / maxDepth) * plotH;
+    const y660 = padTop + (660.0 / maxDepth) * plotH;
+
+    cCtx.setLineDash([4, 4]);
+    cCtx.strokeStyle = "#2b4060";
+    cCtx.beginPath();
+    cCtx.moveTo(padLeft, y410); cCtx.lineTo(w - padRight, y410);
+    cCtx.moveTo(padLeft, y660); cCtx.lineTo(w - padRight, y660);
+    cCtx.stroke();
+    cCtx.setLineDash([]);
+
+    cCtx.fillStyle = "#4a6890";
+    cCtx.fillText("410 km Mantle Transition", w - 170, y410 - 4);
+    cCtx.fillText("660 km Lower Mantle", w - 150, y660 - 4);
+
+    const scen = getActiveScenario();
+    const wb = scen.wadati_benioff;
+
+    if (wb && wb.depth_profile) {
+      // Subducting Slab Polygon
+      cCtx.fillStyle = "rgba(0, 229, 255, 0.08)";
+      cCtx.strokeStyle = "#00e5ff";
+      cCtx.lineWidth = 2.0;
+
+      cCtx.beginPath();
+      wb.depth_profile.forEach((pt, i) => {
+        const x = padLeft + (pt[0] / maxDist) * plotW;
+        const y = padTop + (pt[1] / maxDepth) * plotH;
+        if (i === 0) cCtx.moveTo(x, y);
+        else cCtx.lineTo(x, y);
+      });
+      cCtx.stroke();
+
+      // Moho & Volcanic Front
+      cCtx.fillStyle = "#ffaa00";
+      cCtx.beginPath();
+      cCtx.arc(padLeft + (210 / maxDist) * plotW, padTop + 10, 6, 0, Math.PI * 2);
+      cCtx.fill();
+      cCtx.fillStyle = "#e6eef8";
+      cCtx.fillText("Volcanic Front", padLeft + (210 / maxDist) * plotW - 35, padTop + 28);
+    }
+
+    // Active Earthquake Hypocenter Marker
+    const hypoDepth = scen.hypocenter ? scen.hypocenter.depth_km : 28.0;
+    const hypoX = padLeft + (80 / maxDist) * plotW;
+    const hypoY = padTop + (hypoDepth / maxDepth) * plotH;
+
+    cCtx.fillStyle = "#ff3355";
+    cCtx.beginPath();
+    cCtx.arc(hypoX, hypoY, 7, 0, Math.PI * 2);
+    cCtx.fill();
+    cCtx.strokeStyle = "#fff";
+    cCtx.lineWidth = 1.5;
+    cCtx.stroke();
+
+    cCtx.fillStyle = "#ff3355";
+    cCtx.font = "bold 11px ui-monospace, monospace";
+    cCtx.fillText(`Focus: Z=${hypoDepth} km`, hypoX + 12, hypoY + 4);
+
+    cCtx.restore();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Municipality Leaderboard & Telemetry DOM Updates
+  // ---------------------------------------------------------------------------
+  function updateTelemetryAndLeaderboard() {
+    const scen = getActiveScenario();
+
+    // Hypocenter Card
+    const mag = scen.magnitude ? scen.magnitude.mw : 7.0;
+    document.getElementById("card-mag").textContent = `M ${mag.toFixed(1)}`;
+    document.getElementById("card-m-def").textContent = scen.magnitude ? scen.magnitude.m_default : mag;
+    document.getElementById("card-m-low").textContent = scen.magnitude ? scen.magnitude.m_low : mag;
+    document.getElementById("card-mw").textContent = mag.toFixed(1);
+    document.getElementById("card-region").textContent = scen.region || "Global Seismic Zone";
+
+    const hypo = scen.hypocenter || { lat: 0, lon: 0, depth_km: 10 };
+    document.getElementById("card-coords").textContent = `${hypo.lat.toFixed(3)}° N, ${hypo.lon.toFixed(3)}° E`;
+    document.getElementById("card-depth").textContent = `${hypo.depth_km.toFixed(1)} km`;
+
+    const depthPct = Math.min(100, (hypo.depth_km / 650.0) * 100);
+    document.getElementById("card-depth-bar").style.width = `${Math.max(5, depthPct)}%`;
+
+    if (scen.mechanism) {
+      document.getElementById("card-mech").textContent = `Strike ${scen.mechanism.strike}° / Dip ${scen.mechanism.dip}°`;
+    }
+
+    // Covariance Card
+    if (scen.uncertainty_ellipsoid) {
+      document.getElementById("card-sig-x").textContent = `${scen.uncertainty_ellipsoid.sigma_x_km} km`;
+      document.getElementById("card-sig-y").textContent = `${scen.uncertainty_ellipsoid.sigma_y_km} km`;
+      document.getElementById("card-sig-z").textContent = `${scen.uncertainty_ellipsoid.sigma_z_km} km`;
+    }
+
+    // Slab Geometry Card
+    if (scen.wadati_benioff) {
+      document.getElementById("card-slab-dip").textContent = `${scen.wadati_benioff.slab_dip_deg.toFixed(1)}°`;
+      document.getElementById("card-slab-strike").textContent = `${scen.wadati_benioff.slab_strike_deg.toFixed(1)}°`;
+      document.getElementById("card-trench").textContent = scen.wadati_benioff.description || "Subduction Interface";
+    }
+
+    // Municipality List
+    const container = document.getElementById("muni-list-container");
+    container.innerHTML = "";
+
+    const munis = scen.municipalities || [];
+    let homeSArrivalSec = 999.0;
+    let homeIntensityBadge = "4";
+
+    munis.forEach((m) => {
+      const countdownP = Math.max(0.0, m.seconds_p - state.simTime);
+      const countdownS = Math.max(0.0, m.seconds_s - state.simTime);
+
+      const item = document.createElement("div");
+      item.className = "municipality-item";
+
+      const shindoClass = `shindo-${m.jma_shindo.replace("+", "p").replace("-", "m")}`;
+      const badgeHtml = `<div class="shindo-badge ${shindoClass}">${m.jma_shindo}</div>`;
+
+      let pText = countdownP > 0 ? `P: ${countdownP.toFixed(1)}s` : `P: ARRIVED`;
+      let pClass = countdownP > 0 ? "p-wave" : "arrived";
+
+      let sText = countdownS > 0 ? `S: ${countdownS.toFixed(1)}s` : `S: ARRIVED`;
+      let sClass = countdownS > 0 ? "s-wave" : "arrived";
+
+      item.innerHTML = `
+        ${badgeHtml}
+        <div class="muni-info">
+          <div class="muni-name" title="${m.name}, ${m.country_code}">${m.name}, ${m.country_code}</div>
+          <div class="muni-metrics">
+            <span>${m.distance_km.toFixed(0)} km</span>
+            <span>${m.pga_g}g</span>
+            <span>MMI ${m.mmi.toFixed(1)}</span>
+          </div>
+        </div>
+        <div class="muni-countdowns">
+          <span class="pill-countdown ${pClass}">${pText}</span>
+          <span class="pill-countdown ${sClass}">${sText}</span>
+        </div>
+      `;
+      container.appendChild(item);
+
+      if (m.name.toLowerCase().includes(state.homeCity.split(",")[0].trim().toLowerCase())) {
+        homeSArrivalSec = countdownS;
+        homeIntensityBadge = m.jma_shindo;
+      }
+    });
+
+    // Update Floating EEW Warning Banner
+    const banner = document.getElementById("eew-banner");
+    const bannerTime = document.getElementById("eew-banner-time");
+
+    if (homeSArrivalSec > 0.0 && homeSArrivalSec < 60.0) {
+      banner.style.display = "flex";
+      bannerTime.textContent = `S-WAVE: ${homeSArrivalSec.toFixed(1)}s (SHINDO ${homeIntensityBadge})`;
+      if (homeSArrivalSec < 10.0) {
+        playAlertChime(2.0);
+      } else {
+        playAlertChime(1.0);
+      }
+    } else if (homeSArrivalSec === 0.0 && state.simTime > 0.0 && state.simTime < 45.0) {
+      banner.style.display = "flex";
+      bannerTime.textContent = `DESTRUCTIVE S-WAVE ARRIVED (SHAKING)`;
+    } else {
+      banner.style.display = "none";
+    }
+
+    // Viewport HUD radii
+    const rP = state.simTime * 7.8;
+    const rS = state.simTime * 4.4;
+    document.getElementById("hud-radius-p").textContent = `${rP.toFixed(0)} km`;
+    document.getElementById("hud-radius-s").textContent = `${rS.toFixed(0)} km`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main Animation & Render Loop
+  // ---------------------------------------------------------------------------
+  let lastTimestamp = performance.now();
+
+  function animate(now) {
+    const dt = (now - lastTimestamp) * 0.001;
+    lastTimestamp = now;
+
+    // Advance simulation time if playing
+    if (state.isPlaying) {
+      state.simTime += dt * state.speedMultiplier;
+      if (state.simTime > 60.0) state.simTime = 60.0;
+      document.getElementById("timeline-scrub").value = state.simTime;
+      document.getElementById("clock-display").textContent = `T+ ${state.simTime.toFixed(1)}s`;
+      updateTelemetryAndLeaderboard();
+    }
+
+    // Camera inertia easing
+    state.camera.yaw += (state.camera.targetYaw - state.camera.yaw) * 0.12;
+    state.camera.pitch += (state.camera.targetPitch - state.camera.pitch) * 0.12;
+    state.camera.distance += (state.camera.targetDistance - state.camera.distance) * 0.12;
+
+    if (state.autoRotate) {
+      state.camera.targetYaw += 0.003;
+    }
+
+    // Resize viewport canvas
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    gl.clearColor(0.015, 0.025, 0.04, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+
+    gl.useProgram(prog);
+
+    // Compute Camera Matrices
+    const eye = [
+      state.camera.distance * Math.cos(state.camera.pitch) * Math.sin(state.camera.yaw),
+      state.camera.distance * Math.sin(state.camera.pitch),
+      state.camera.distance * Math.cos(state.camera.pitch) * Math.cos(state.camera.yaw),
+    ];
+    const center = [0, 0, 0];
+    const up = [0, 1, 0];
+
+    const view = new Float32Array(16);
+    mat4LookAt(view, eye, center, up);
+
+    const proj = new Float32Array(16);
+    mat4Perspective(proj, (45 * Math.PI) / 180.0, w / h, 0.1, 100.0);
+
+    const model = new Float32Array(16);
+    mat4Identity(model);
+
+    const mvp = new Float32Array(16);
+    const vp = new Float32Array(16);
+    mat4Multiply(vp, proj, view);
+    mat4Multiply(mvp, vp, model);
+
+    gl.uniformMatrix4fv(uMvpLoc, false, mvp);
+    gl.uniformMatrix4fv(uModelLoc, false, model);
+
+    // Set Hypocenter and Wavefront Radii Uniforms
+    const scen = getActiveScenario();
+    const hypoLat = scen.hypocenter ? scen.hypocenter.lat : 38.32;
+    const hypoLon = scen.hypocenter ? scen.hypocenter.lon : 142.36;
+    const hypoVec = latLonToVec3(hypoLat, hypoLon);
+
+    gl.uniform3f(uHypoLoc, hypoVec[0], hypoVec[1], hypoVec[2]);
+    gl.uniform1f(uRadPLoc, state.simTime * 7.8);
+    gl.uniform1f(uRadSLoc, state.simTime * 4.4);
+    gl.uniform1f(uSimTimeLoc, state.simTime);
+    gl.uniform3f(uCamPosLoc, eye[0], eye[1], eye[2]);
+
+    gl.bindVertexArray(vao);
+    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+
+    // Render 2D Helicorder waveforms
+    renderHelicorder();
+
+    requestAnimationFrame(animate);
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI Event Bindings
+  // ---------------------------------------------------------------------------
+  document.getElementById("btn-play-pause").addEventListener("click", () => {
+    state.isPlaying = !state.isPlaying;
+    initAudio();
+    document.getElementById("play-pause-icon").innerHTML = state.isPlaying ? "&#10074;&#10074;" : "&#9658;";
+    document.getElementById("play-pause-text").textContent = state.isPlaying ? "PAUSE" : "PLAY";
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", () => {
+    state.simTime = 0.0;
+    document.getElementById("timeline-scrub").value = 0;
+    document.getElementById("clock-display").textContent = "T+ 00.0s";
+    updateTelemetryAndLeaderboard();
+  });
+
+  document.getElementById("timeline-scrub").addEventListener("input", (e) => {
+    state.simTime = parseFloat(e.target.value);
+    document.getElementById("clock-display").textContent = `T+ ${state.simTime.toFixed(1)}s`;
+    updateTelemetryAndLeaderboard();
+  });
+
+  document.getElementById("btn-speed-1x").addEventListener("click", () => setSpeed(1.0, "btn-speed-1x"));
+  document.getElementById("btn-speed-5x").addEventListener("click", () => setSpeed(5.0, "btn-speed-5x"));
+  document.getElementById("btn-speed-20x").addEventListener("click", () => setSpeed(20.0, "btn-speed-20x"));
+
+  function setSpeed(spd, btnId) {
+    state.speedMultiplier = spd;
+    ["btn-speed-1x", "btn-speed-5x", "btn-speed-20x"].forEach((id) => {
+      document.getElementById(id).classList.toggle("active", id === btnId);
+    });
+  }
+
+  document.getElementById("btn-alarm").addEventListener("click", () => {
+    initAudio();
+    state.alarmEnabled = !state.alarmEnabled;
+    const btn = document.getElementById("btn-alarm");
+    btn.classList.toggle("danger", state.alarmEnabled);
+    btn.classList.toggle("active", state.alarmEnabled);
+    document.getElementById("alarm-state").textContent = state.alarmEnabled ? "ON" : "OFF";
+  });
+
+  document.getElementById("scenario-select").addEventListener("change", (e) => {
+    state.currentScenarioId = e.target.value;
+    state.simTime = 0.0;
+    document.getElementById("timeline-scrub").value = 0;
+    document.getElementById("clock-display").textContent = "T+ 00.0s";
+
+    // Focus camera on new epicenter
+    const scen = getActiveScenario();
+    if (scen.hypocenter) {
+      const latRad = (scen.hypocenter.lat * Math.PI) / 180.0;
+      const lonRad = (scen.hypocenter.lon * Math.PI) / 180.0;
+      state.camera.targetYaw = lonRad;
+      state.camera.targetPitch = latRad * 0.8;
+      state.camera.targetDistance = 2.4;
+    }
+    updateTelemetryAndLeaderboard();
+  });
+
+  document.getElementById("home-select").addEventListener("change", (e) => {
+    state.homeCity = e.target.value;
+    updateTelemetryAndLeaderboard();
+  });
+
+  document.getElementById("btn-cam-focus").addEventListener("click", () => {
+    const scen = getActiveScenario();
+    if (scen.hypocenter) {
+      state.camera.targetYaw = (scen.hypocenter.lon * Math.PI) / 180.0;
+      state.camera.targetPitch = (scen.hypocenter.lat * Math.PI) / 180.0 * 0.8;
+      state.camera.targetDistance = 2.0;
+    }
+  });
+
+  document.getElementById("btn-cam-north").addEventListener("click", () => {
+    state.camera.targetPitch = 0.35;
+    state.camera.targetDistance = 2.8;
+  });
+
+  document.getElementById("btn-cam-slab").addEventListener("click", () => {
+    const scen = getActiveScenario();
+    if (scen.wadati_benioff) {
+      state.camera.targetPitch = 0.15;
+      state.camera.targetDistance = 2.1;
+    }
+  });
+
+  document.getElementById("btn-cam-autorotate").addEventListener("click", () => {
+    state.autoRotate = !state.autoRotate;
+    document.getElementById("btn-cam-autorotate").classList.toggle("active", state.autoRotate);
+  });
+
+  // Wadati-Benioff 2D Cutaway Modal
+  const modal = document.getElementById("cutaway-modal");
+  document.getElementById("btn-open-cutaway").addEventListener("click", () => {
+    modal.classList.add("active");
+    renderCutaway();
+  });
+
+  document.getElementById("btn-close-cutaway").addEventListener("click", () => {
+    modal.classList.remove("active");
+  });
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("active");
+  });
+
+  // Drag & Drop Handling
+  const dropzone = document.getElementById("dropzone");
+  window.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.classList.add("active");
+  });
+
+  window.addEventListener("dragleave", (e) => {
+    if (e.relatedTarget === null) dropzone.classList.remove("active");
+  });
+
+  window.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("active");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target.result;
+          let customData = null;
+          if (file.name.endsWith(".json") || file.name.endsWith(".geojson")) {
+            customData = JSON.parse(text);
+          }
+          if (customData) {
+            window.QUAKESNAIL_OFFLINE_SCENARIOS = window.QUAKESNAIL_OFFLINE_SCENARIOS || {};
+            window.QUAKESNAIL_OFFLINE_SCENARIOS["custom_imported"] = customData;
+            state.currentScenarioId = "custom_imported";
+            updateTelemetryAndLeaderboard();
+          }
+        } catch (err) {
+          console.warn("Could not parse dropped file as scenario:", err);
+        }
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  // Initial setup
+  // Focus initial camera position on Tohoku
+  state.camera.yaw = (142.36 * Math.PI) / 180.0;
+  state.camera.pitch = (38.32 * Math.PI) / 180.0 * 0.8;
+  state.camera.targetYaw = state.camera.yaw;
+  state.camera.targetPitch = state.camera.pitch;
+
+  updateTelemetryAndLeaderboard();
+  requestAnimationFrame(animate);
+
+})();
+</script>
+</body>
+</html>

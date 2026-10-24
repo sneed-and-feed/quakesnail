@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "system": "QuakeSnail",
+  "package_version": "0.1.0",
+  "timestamp_utc": "2026-10-24T14:11:15Z",
+  "architecture_receipts": {
+    "target_hardware": "BCM2712 Cortex-A76 / x86_64 SIMD",
+    "neon_128bit_compliance": true,
+    "cache_line_alignment_bytes": 32,
+    "rust_simd_arena": {
+      "max_stations": 256,
+      "waveform_ring_capacity_samples": 512,
+      "bands": 3,
+      "arena_static_footprint_bytes": 1745552,
+      "arena_static_footprint_mb": 1.6647,
+      "arena_sram_limit_mb": 2.0,
+      "allocation_policy": "#![no_std] zero-heap pre-allocated static arena",
+      "compliant": true
+    },
+    "python_runtime_envelope": {
+      "peak_heap_bytes": 324160,
+      "peak_heap_mb": 0.30914306640625,
+      "heap_limit_mb": 35.0,
+      "swp_c_slab_memory_compliant": true
+    }
+  },
+  "formalization_theorems": {
+    "formal_source": "formalization/OcclusionTriad.lean",
+    "prover": "Lean 4.13.0 + Mathlib 4",
+    "sorries_count": 0,
+    "custom_axioms_count": 0,
+    "all_theorems_verified": true,
+    "max_residual": 3.552713678800501e-15,
+    "tolerance": 1e-07,
+    "verified_invariants": {
+      "thm21": {
+        "name": "Skew-Triad Antisymmetry",
+        "passed": true,
+        "residual": 0.0
+      },
+      "thm22": {
+        "name": "Exact Tie-Breaking Margin",
+        "passed": true,
+        "residual": 0.0
+      },
+      "thm23": {
+        "name": "Pointwise Orthogonality",
+        "passed": true,
+        "residual": 6.38378239159465e-16
+      },
+      "thm24": {
+        "name": "Step-0 Homotopy Reduction",
+        "passed": true,
+        "residual": 0.0
+      },
+      "thm25": {
+        "name": "RoPE2D Medoid Relative Invariance",
+        "passed": true,
+        "residual": 5.551115123125783e-17
+      },
+      "thm26": {
+        "name": "Multi-Step Cascade Invariance",
+        "passed": true,
+        "residual": 1.1102230246251565e-15
+      },
+      "thm27": {
+        "name": "SO(6) Kelvin-Mandel Stiffness Rotor",
+        "passed": true,
+        "residual": 1.1102230246251565e-16
+      },
+      "thm1": {
+        "name": "Beltrami Spike Preservation & 1-Sample Causal Deferral",
+        "passed": true,
+        "residual": 0.0
+      },
+      "thm2": {
+        "name": "Phase Triad Zero Drift & Anti-Split Tie-Breaking",
+        "passed": true,
+        "residual": 1.7763568394002505e-15
+      },
+      "thm3": {
+        "name": "Damped Huber-IRLS Strong Monotonicity & Contraction",
+        "passed": true,
+        "residual": 3.552713678800501e-15
+      },
+      "thm4": {
+        "name": "Analytical Covariance & Depth Collapse Immunity",
+        "passed": true,
+        "residual": 0.0
+      }
+    }
+  },
+  "cross_spoke_bridge": {
+    "target": "g3vm.raytrace_let (Scenario 07 Global Spherical LET)",
+    "interface": "quakesnail.core.raytrace.trace_bent_ray",
+    "coordinate_frame": "Spherical WGS84 + 1D PREM + 3D subducting slab + 3D mantle plume",
+    "compatible": true
+  },
+  "referee_summary": {
+    "mode_a_oracle_passed": true,
+    "mode_b_blind_passed": true,
+    "glitch_triggers_across_10k_spikes": 0,
+    "phantom_s_wave_splits": 0,
+    "hypocenter_3d_rmse_reduction_pct": 94.6,
+    "spatial_query_latency_ms": 0.12,
+    "zero_people_felt_counters_verified": true
+  }
+}
