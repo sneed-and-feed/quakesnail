@@ -370,6 +370,15 @@ All 58 tests pass unconditionally, demonstrating:
 
 ---
 
+## 10. Technical Documentation Index (`docs/`)
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): System architecture, 3-stage pipeline specification, `#![no_std]` Rust SIMD memory layout, and sibling repository synthesis (`stylo`, `g3vm`, `oatse`, `toposnail`, `bmhd`).
+- [`docs/LITERATURE_AND_FORMALIZATION.md`](docs/LITERATURE_AND_FORMALIZATION.md): Peer-reviewed seismological literature survey (2022–2026) and Lean 4 formalization specification (`formalization/OcclusionTriad.lean`).
+- [`docs/GLOBALQUAKE_LEGACY_AUDIT.md`](docs/GLOBALQUAKE_LEGACY_AUDIT.md): Source-level forensic teardown of legacy Java `GlobalQuake` (`BetterAnalysis`, `ClusterAnalysis`, `EarthquakeAnalysis`, and `countFelt` population heuristics).
+- [`docs/VERIFICATION_AND_AUDIT.md`](docs/VERIFICATION_AND_AUDIT.md): Comprehensive 4-tier E2E test suite specification and independent forensic victory audit report.
+
+---
+
 ## License
 
 CC0-1.0 Universal — Public Domain Dedication.
