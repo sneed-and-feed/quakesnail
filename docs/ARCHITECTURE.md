@@ -1006,3 +1006,32 @@ The Lean 4 formalization file `quakesnail/formalization/OcclusionTriad.lean` inh
    proving that physical S-waves can never causally precede P-waves from the same event.
 
 All theorems verify with **zero `sorry`** and zero custom axioms. Runtime verification via `quakesnail verify-theorems` checks all invariant residuals within numerical tolerance $\le 1.0\text{e}-7$.
+
+---
+
+## 9. Firefox WebGL2 Compositor Fixes & Live Broadcast Modes (Options A, B, C)
+
+### 9.1 Firefox WebGL2 & CSS Grid Compositor Fixes
+- **Column-Major OpenGL Matrix Layout & CCW Winding**: `mat4Perspective`, `mat4LookAt`, and `mat4Multiply` in `quakesnail/studio/template.html` store translation components in indices `12, 13, 14` (OpenGL column-major standard) and generate sphere triangle indices in counter-clockwise (`CCW`) order so outward normals face the camera when `gl.enable(gl.CULL_FACE)` is active.
+- **Firefox ANGLE / WebRender Swapchain Preservation**: `#globe-canvas` is initialized with `preserveDrawingBuffer: true` and explicitly composited into `#globe-overlay-canvas` (`oCtx.drawImage(canvas, 0, 0, w, h)`) on every frame, preventing Firefox on Windows from discarding the lower WebGL2 swapchain beneath the 2D HUD overlay canvas.
+- **Firefox Sub-Grid Sizing & Resize Synchronization**: All `.panel`, `#center-viewport`, and `.helicorder-body` flex/grid containers enforce `min-width: 0; min-height: 0;`, and `ResizeObserver` triggers synchronous canvas backing-store updates alongside a `requestAnimationFrame` fallback.
+
+### 9.2 Option A: Pure-Browser Zero-Backend Live Mode
+- Connects directly from `studio/quakesnail_portable_studio.html` (`file://` or `http://`) to:
+  1. Local QuakeSnail SeedLink/FDSN bridge (`http://127.0.0.1:8080/api/state`),
+  2. EMSC SeismicPortal real-time WebSocket (`wss://www.seismicportal.eu/standing_order/websocket`),
+  3. USGS Real-Time GeoJSON feeds (`all_hour.geojson`, `2.5_day.geojson`),
+  4. GeoNet New Zealand Quake API (`https://api.geonet.org.nz/quake?MMI=3`), and
+  5. EarthScope / IRIS FDSN StationWS (`https://service.earthscope.org/fdsnws/station/1/query`).
+- Includes an in-browser multi-record `miniSEED` v2.4 binary decoder (`decodeMiniSeedBuffer` / `decodeSingleMiniSeedRecord`) supporting Steim-1 (`encoding=10`), Steim-2 (`encoding=11`), Int16 (`1`), Int32 (`3`), Float32 (`4`), Float64 (`5`), big/little-endian word orders, and 8-byte `SL` SeedLink prefixes.
+
+### 9.3 Option B: Python Multi-SeedLink TCP + FDSN Station Bridge (`quakesnail/core/streaming.py`)
+- **`SeedLinkTCPClient`**: Real TCP SeedLink v3 client (`HELLO`, `STATION`, `SELECT`, `DATA`, `END`) supporting `rtserve.earthscope.org:18000`, `geofon.gfz-potsdam.de:18000`, and `link.geonet.org.nz:18000`.
+- **`decode_miniseed_record` & `decode_miniseed_stream`**: Full Python `miniSEED` v2.4 decoder/encoder for Steim-1, Steim-2, Int16, Int32, Float32, and Float64 across single and multi-record streams.
+- **`FDSNStationClient` & `LiveEventFeedClient`**: Queries FDSN StationWS text inventories and USGS/EMSC/GeoNet live earthquake feeds with deterministic offline fallback.
+- **Studio Live Server (`quakesnail studio --serve --port 8080`)**: Serves the Studio HTML at `/` and live JSON endpoints at `/api/state`, `/api/events`, `/api/stations`, and `/api/waveforms`.
+
+### 9.4 Option C: 24/7 Broadcast / Monitor HUD Mode
+- **Top-Left Detected Earthquake Telemetry Box**: Displays Roman MMI badge (`I`–`X+`), region, `DD/MM/YYYY HH:MM:SS UTC` origin timestamp, lat/lon, depth, revision count, quality grade badge (`A`/`B`/`C`/`D`), vertical magnitude scale (`1`–`9`), station counts (`Total`, `Used`, `Err`), directional covariance errors (`Err. Depth`, `Err. N-S`, `Err. Origin`, `Err. E-W`), and `Pct. Match`.
+- **3D Globe Layers & PiP Waveform Monitor**: Renders 60+ global FDSN station triangles colored by real-time ground motion intensity, fault lines colored by tectonic regime (`SUBDUCTION`, `DIVERGENT`, `TRANSFORM`, `NORMAL`, `REVERSE`, `OTHER`), automatic camera director (`AUTO CAM`), bottom-left Picture-in-Picture (`PiP`) `1 - 5 Hz` live station waveform monitor, and right-hand quality-graded live earthquake feed alongside affected municipality countdowns (strictly **zero "people felt" counters**).
+

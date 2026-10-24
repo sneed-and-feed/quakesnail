@@ -81,8 +81,17 @@ def cmd_studio(args: argparse.Namespace) -> int:
                 print(f"Studio bundler queued. Export target set to: {out_file}")
                 return 0
 
+    host = getattr(args, "host", "127.0.0.1")
+    port = getattr(args, "port", 8080)
     print("Launching QuakeSnail Studio Web Server...")
-    print(f"Host: {getattr(args, 'host', '127.0.0.1')}:{getattr(args, 'port', 8080)}")
+    print(f"Host: {host}:{port}")
+    if getattr(args, "serve", False):
+        from quakesnail.studio.bundler import create_studio_http_server
+        srv = create_studio_http_server(host=host, port=port)
+        try:
+            srv.serve_forever()
+        except KeyboardInterrupt:
+            srv.server_close()
     return 0
 
 
@@ -111,10 +120,14 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
 def cmd_stream(args: argparse.Namespace) -> int:
     """Connect to live SeedLink / FDSN / USGS telemetry or replay offline miniSEED."""
     feed = getattr(args, "feed", "synthetic")
-    print(f"QuakeSnail Stream Manager: feed='{feed}'")
+    server = getattr(args, "server", "rtserve.earthscope.org:18000")
+    stations = getattr(args, "stations", "all")
+    replay = getattr(args, "replay", None)
+    print(f"QuakeSnail Stream Manager: feed='{feed}' server='{server}'")
     try:
         from quakesnail.core.streaming import start_stream
-        start_stream(feed=feed)
+        res = start_stream(feed=feed, server=server, stations=stations, replay_path=replay)
+        print(json.dumps(res))
         return 0
     except ImportError:
         print(f"Stream interface configured for feed '{feed}'. Ready for streaming pipeline.")
@@ -214,6 +227,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--open",
         action="store_true",
         help="Automatically open studio in web browser",
+    )
+    p_studio.add_argument(
+        "--serve",
+        action="store_true",
+        help="Run blocking HTTP server serving Studio UI and live SeedLink/FDSN JSON endpoints",
     )
     p_studio.set_defaults(func=cmd_studio)
 

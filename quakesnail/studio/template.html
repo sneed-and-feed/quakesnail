@@ -65,14 +65,14 @@ html, body {
 .annunciator-strip {
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 6px 14px;
+  padding: 5px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
-  gap: 12px;
+  gap: 6px;
   flex-shrink: 0;
   z-index: 20;
 }
@@ -80,17 +80,19 @@ html, body {
 .brand-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .brand-logo {
   font-weight: 800;
   color: var(--cyan);
-  letter-spacing: 1.5px;
+  letter-spacing: 0.6px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 11px;
+  white-space: nowrap;
   text-shadow: 0 0 10px var(--cyan-glow);
 }
 
@@ -98,11 +100,12 @@ html, body {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   color: var(--cyan);
-  padding: 2px 7px;
+  padding: 2px 5px;
   border-radius: 3px;
-  font-size: 9.5px;
-  letter-spacing: 0.8px;
+  font-size: 8.5px;
+  letter-spacing: 0.3px;
   font-weight: 700;
+  white-space: nowrap;
   text-transform: uppercase;
 }
 
@@ -133,7 +136,7 @@ html, body {
 .ctrl-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
 }
 
@@ -141,10 +144,11 @@ html, body {
   background: var(--bg-input);
   border: 1px solid var(--border-bright);
   color: var(--text-main);
-  padding: 4px 8px;
+  padding: 3px 5px;
   border-radius: 4px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 9.5px;
+  max-width: 190px;
   cursor: pointer;
   outline: none;
 }
@@ -158,14 +162,15 @@ html, body {
   background: var(--bg-card);
   border: 1px solid var(--border-bright);
   color: var(--text-main);
-  padding: 4px 10px;
+  padding: 3px 7px;
   border-radius: 4px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
+  white-space: nowrap;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: all 0.15s ease-in-out;
 }
 
@@ -194,13 +199,13 @@ html, body {
 .scrub-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
 }
 
 .scrub-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 130px;
+  width: 80px;
   height: 5px;
   background: var(--border-subtle);
   border-radius: 3px;
@@ -219,16 +224,34 @@ html, body {
   box-shadow: 0 0 6px var(--cyan-glow);
 }
 
-/* Main Grid Layout */
+.scrub-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--cyan-glow);
+}
+
+.scrub-slider::-moz-range-track {
+  height: 5px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+
+/* Main Grid Layout - Firefox Gecko minmax(0, 1fr) fix */
 .workspace-grid {
-  flex: 1;
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 290px 1fr 340px;
-  grid-template-rows: 1fr 200px;
+  grid-template-columns: 310px minmax(0, 1fr) 355px;
+  grid-template-rows: minmax(0, 1fr) 190px;
   gap: 2px;
   background: var(--border-subtle);
   min-height: 0;
+  min-width: 0;
   position: relative;
+  overflow: hidden;
 }
 
 /* Left Telemetry Panel */
@@ -238,19 +261,22 @@ html, body {
   background: var(--bg-panel);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 7px;
+  padding: 8px;
   overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
 }
 
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 5px;
-  padding: 10px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .card-title {
@@ -267,15 +293,168 @@ html, body {
   padding-bottom: 4px;
 }
 
+/* Broadcast Quality & Magnitude Telemetry Box */
+.gq-detect-banner {
+  background: linear-gradient(90deg, #1a2639, #0d1522);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gq-top-split {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.gq-mmi-box {
+  background: #1b2432;
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.gq-mmi-roman {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.quality-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 11px;
+  color: #05080d;
+}
+.quality-badge.q-A, .quality-badge.quality-A { background: #00e676; color: #04120a; }
+.quality-badge.q-B, .quality-badge.quality-B { background: #aeea00; color: #101600; }
+.quality-badge.q-C, .quality-badge.quality-C { background: #ff9100; color: #190c00; }
+.quality-badge.q-D, .quality-badge.quality-D { background: #ff3d00; color: #ffffff; }
+.quality-badge.q-E, .quality-badge.quality-E, .quality-badge.q-F, .quality-badge.quality-F { background: #b71c1c; color: #ffffff; }
+
+.gq-mag-err-split {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 2px;
+}
+
+.mag-bar-wrap {
+  background: #060a10;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--text-muted);
+}
+
+.mag-bar-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.mag-bar-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 7.5px;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 1px 0;
+  user-select: none;
+}
+
+.mag-bar-track {
+  position: relative;
+  width: 16px;
+  height: 92px;
+  background: #0a101a;
+  border: 1px solid #243550;
+  overflow: hidden;
+}
+
+.mag-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(180deg, #ff3355 0%, #ffb800 50%, #00e676 100%);
+  opacity: 0.78;
+  transition: height 0.25s ease;
+}
+
+.mag-bar-marker {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #00ff9d;
+  box-shadow: 0 0 6px #00ff9d;
+  bottom: 50%;
+  transition: bottom 0.25s ease;
+}
+
+.gq-err-grid {
+  background: #070d17;
+  border: 1px solid #1c355e;
+  border-radius: 4px;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+.err-pill {
+  padding: 0px 4px;
+  border-radius: 2px;
+  font-weight: 800;
+  color: #041008;
+  background: #00e676;
+}
+.err-pill.warn { background: #aeea00; }
+.err-pill.info { background: #00b0ff; color: #fff; }
+
 .hypo-hero {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .hypo-mag {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 900;
   font-family: var(--font-mono);
   color: var(--red);
@@ -287,7 +466,7 @@ html, body {
   font-size: 11px;
   color: var(--text-main);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .data-row {
@@ -295,7 +474,7 @@ html, body {
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .data-label {
@@ -308,12 +487,12 @@ html, body {
 }
 
 .depth-meter {
-  height: 6px;
+  height: 5px;
   background: var(--bg-void);
   border-radius: 3px;
   overflow: hidden;
   position: relative;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .depth-fill {
@@ -330,25 +509,36 @@ html, body {
   background: var(--bg-void);
   position: relative;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
-#globe-canvas {
+#globe-canvas,
+#globe-overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: block;
 }
 
+#globe-overlay-canvas {
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Floating EEW Tactical Warning Banner */
 .eew-alert-banner {
   position: absolute;
-  top: 12px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(13, 21, 34, 0.92);
   border: 1px solid var(--amber);
   border-radius: 6px;
-  padding: 8px 18px;
-  display: flex;
+  padding: 6px 16px;
+  display: none;
   align-items: center;
   gap: 14px;
   z-index: 10;
@@ -365,34 +555,131 @@ html, body {
 
 .eew-alert-title {
   color: var(--amber);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .eew-alert-countdown {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
   color: var(--red);
   letter-spacing: 0.5px;
 }
 
-/* Viewport HUD Overlays */
-.viewport-overlay-hud {
+/* Epicenter Callout Tag (Left-middle of viewport) */
+.epicenter-callout-pill {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(235, 210, 95, 0.94);
+  color: #0b0e14;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid #fff3a1;
+  z-index: 8;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+
+/* Bottom-Left Picture-in-Picture Live Station Waveform Monitor */
+.pip-monitor-box {
   position: absolute;
   bottom: 12px;
+  left: 12px;
+  width: 285px;
+  height: 158px;
+  background: rgba(10, 14, 22, 0.92);
+  border: 1px solid var(--border-bright);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+}
+
+.pip-monitor-header {
+  padding: 4px 8px;
+  background: rgba(18, 27, 42, 0.95);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ff8833;
+}
+
+.pip-canvas-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+#pip-waveform-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Viewport HUD Status Overlay */
+.viewport-overlay-hud {
+  position: absolute;
+  top: 44px;
   left: 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--text-muted);
   pointer-events: none;
-  background: rgba(7, 12, 20, 0.75);
-  padding: 8px 12px;
+  background: rgba(7, 12, 20, 0.78);
+  padding: 6px 10px;
   border-radius: 5px;
   border: 1px solid var(--border-subtle);
+  z-index: 8;
+}
+
+/* Bottom-Right Fault Line Types Legend */
+.fault-legend-box {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(10, 15, 24, 0.9);
+  border: 1px solid var(--border-bright);
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-main);
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.fault-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.fault-swatch {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
 }
 
 .viewport-controls {
@@ -401,11 +688,11 @@ html, body {
   right: 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   z-index: 10;
 }
 
-/* Right Municipality Intensity & Countdown Leaderboard */
+/* Right Panel: Dual Live Earthquake Feed + Municipality Countdowns */
 .leaderboard-panel {
   grid-column: 3;
   grid-row: 1;
@@ -413,49 +700,159 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 .leaderboard-header {
-  padding: 10px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
 .leaderboard-title {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .leaderboard-subtitle {
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--text-muted);
 }
 
-.municipality-list {
-  flex: 1;
+.live-event-list {
+  flex: 0 0 44%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 6px;
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border-bright);
+  min-height: 0;
+}
+
+.live-quake-item,
+.live-event-item {
+  background: #141c2b;
+  border: 1px solid #24334d;
+  border-radius: 3px;
+  padding: 4px 7px;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 7px;
+  align-items: center;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: background 0.12s ease;
+}
+
+.live-quake-item:hover,
+.live-quake-item.active,
+.live-event-item:hover,
+.live-event-item.active,
+.live-event-item.active-event {
+  background: #1d2b42;
+  border-color: var(--cyan);
+}
+
+.quake-mmi-col,
+.event-mmi-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 6, 10, 0.55);
+  border-radius: 3px;
+  padding: 2px 3px;
+  line-height: 1.1;
+}
+
+.quake-mmi-roman,
+.event-mmi-box .roman {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.quake-depth-lbl,
+.event-mmi-box .depth-sub {
+  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.quake-mid-col,
+.event-main-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.quake-region-name,
+.event-region-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quake-time-utc,
+.event-meta-row {
+  font-size: 9.5px;
+  color: #9ab0c7;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quake-right-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.quake-mag-lbl,
+.event-mag-pill {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.municipality-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 6px;
+  min-height: 0;
 }
 
 .municipality-item {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
-  padding: 7px 9px;
+  padding: 6px 8px;
   display: grid;
-  grid-template-columns: 38px 1fr auto;
+  grid-template-columns: 36px 1fr auto;
   gap: 8px;
   align-items: center;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .municipality-item:hover {
@@ -464,8 +861,8 @@ html, body {
 }
 
 .shindo-badge {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -473,7 +870,7 @@ html, body {
   justify-content: center;
   font-family: var(--font-mono);
   font-weight: 900;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
@@ -498,7 +895,7 @@ html, body {
 
 .muni-name {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
@@ -507,10 +904,10 @@ html, body {
 
 .muni-metrics {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--text-muted);
   display: flex;
-  gap: 8px;
+  gap: 7px;
 }
 
 .muni-countdowns {
@@ -519,7 +916,7 @@ html, body {
   align-items: flex-end;
   gap: 2px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9.5px;
 }
 
 .pill-countdown {
@@ -557,6 +954,8 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 .helicorder-header {
@@ -569,9 +968,20 @@ html, body {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.helicorder-canvas-wrap {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
 }
 
 #helicorder-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -624,9 +1034,13 @@ html, body {
   flex: 1;
   position: relative;
   overflow: hidden;
+  min-height: 0;
 }
 
 #cutaway-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -672,9 +1086,14 @@ html, body {
     </div>
     <span class="badge-tag pass" id="status-engine-pill">CALIBRATED // MODE A</span>
     <span class="badge-tag" id="status-theorems-pill">THEOREMS 1-4 PASS</span>
+    <span class="badge-tag warning" id="live-feed-status" title="Real-Time Seismic Stream Status">OFFLINE SIM</span>
   </div>
 
   <div class="ctrl-group">
+    <button class="btn" id="btn-live-stream" title="Connect to Real-Time Global Seismic Feeds (EMSC WebSocket / USGS / FDSN / SeedLink)">
+      <span id="live-feed-dot">&#9679;</span> <span id="live-feed-text">LIVE FEED</span>
+    </button>
+
     <label for="scenario-select" style="font-size:10px; color:var(--text-muted);">SCENARIO:</label>
     <select id="scenario-select" class="select-input">
       <option value="scenario_subduction_megathrust">01: Subduction Megathrust (M8.2 Tohoku)</option>
@@ -682,9 +1101,10 @@ html, body {
       <option value="scenario_deep_wadati_benioff">03: Deep Wadati-Benioff (Z=450 km Izu-Bonin)</option>
       <option value="scenario_teleseismic_core_phases">04: Teleseismic Core Phases (PKIKP Antipodal)</option>
       <option value="scenario_swarm_glitch_torture">05: Caldera Swarm + Glitch Torture (20% Spikes)</option>
+      <option value="live_global_stream">06: LIVE Global Real-Time Stream (EMSC/USGS/FDSN)</option>
     </select>
 
-    <label for="home-select" style="font-size:10px; color:var(--text-muted); margin-left:8px;">HOME:</label>
+    <label for="home-select" style="font-size:10px; color:var(--text-muted); margin-left:4px;">HOME:</label>
     <select id="home-select" class="select-input">
       <option value="Tokyo, JP">Tokyo, JP</option>
       <option value="Sendai, JP">Sendai, JP</option>
@@ -705,7 +1125,7 @@ html, body {
 
     <div class="scrub-container">
       <input type="range" id="timeline-scrub" class="scrub-slider" min="0" max="60" step="0.25" value="0">
-      <span id="clock-display" style="font-weight:700; color:var(--cyan); min-width:55px;">T+ 00.0s</span>
+      <span id="clock-display" style="font-weight:700; color:var(--cyan); min-width:52px;">T+ 00.0s</span>
     </div>
 
     <button class="btn active" id="btn-speed-1x">1x</button>
@@ -715,39 +1135,77 @@ html, body {
     <button class="btn" id="btn-alarm" title="Toggle Web Audio Synthesized Siren">
       <span id="alarm-icon">&#128264;</span> ALARM: <span id="alarm-state">OFF</span>
     </button>
+    <span id="utc-live-clock" style="font-weight:700; font-size:9.5px; color:var(--text-bright); white-space:nowrap; text-align:right;">24/10/2026 14:21:33 UTC</span>
   </div>
 </header>
 
 <!-- Main Workspace Layout -->
 <main class="workspace-grid">
 
-  <!-- Left: Inversion & Telemetry Panel -->
+  <!-- Left: Inversion, Broadcast Quality & Telemetry Panel -->
   <aside class="telemetry-panel">
     <div class="card">
-      <div class="card-title">
-        <span>Hypocenter Telemetry</span>
-        <span class="badge-tag pass">INVERTED</span>
+      <div class="gq-detect-banner">
+        <span id="card-detect-header">M8.2 Earthquake detected</span>
+        <span class="badge-tag pass" id="card-status-badge">INVERTED</span>
       </div>
+
+      <div class="gq-top-split">
+        <div class="gq-mmi-box">
+          <span style="font-size:7.5px; color:var(--text-muted);">Max. Intensity<br>Estimated</span>
+          <span class="gq-mmi-roman" id="card-mmi-roman">IX</span>
+          <span style="font-size:8px; color:var(--text-muted);">MMI</span>
+        </div>
+        <div style="display:flex; flex-direction:column; justify-content:space-between; font-family:var(--font-mono); font-size:10px; min-width:0;">
+          <div class="hypo-region" id="card-region">Offshore Miyagi Prefecture, Japan</div>
+          <div id="card-origin-utc" style="color:var(--text-bright); font-weight:700;">24/10/2026 12:00:00</div>
+          <div style="color:var(--text-muted);">lat: <span id="card-coords" style="color:var(--text-main);">38.322° N, 142.369° E</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; white-space:nowrap;">
+            <span>Depth: <strong id="card-depth" style="color:var(--cyan);">28.0 km</strong></span>
+            <span>Rev. <strong id="card-revision">5</strong> | Quality: <span class="quality-badge q-A quality-A" id="card-quality-grade">A</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gq-mag-err-split">
+        <div class="mag-bar-wrap">
+          <span>Magnitude</span>
+          <div class="mag-bar-row">
+            <div class="mag-bar-track">
+              <div class="mag-bar-fill" id="mag-scale-fill"></div>
+              <div class="mag-bar-marker" id="mag-scale-marker"></div>
+            </div>
+            <div class="mag-bar-scale">
+              <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+            </div>
+          </div>
+        </div>
+        <div class="gq-err-grid">
+          <div style="text-align:center; color:var(--text-bright); border-bottom:1px solid #162844; padding-bottom:2px;">
+            Stations: Total <span id="card-sta-total">8</span> Used <span id="card-sta-used">8/8</span> Err <span id="card-sta-err">0</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:3px; margin-top:3px;">
+            <div>Err. Depth <span class="err-pill" id="card-err-depth">2.4km</span></div>
+            <div>Err. N-S <span class="err-pill" id="card-err-ns">0.8km</span></div>
+            <div>Err. Origin <span class="err-pill warn" id="card-err-origin">0.2s</span></div>
+            <div>Err. E-W <span class="err-pill info" id="card-err-ew">1.1km</span></div>
+            <div>No. Stations <span class="err-pill warn" id="card-num-stations">8</span></div>
+            <div>Match <span class="err-pill info" id="card-pct-match">100.0%</span></div>
+          </div>
+        </div>
+      </div>
+
       <div class="hypo-hero">
         <span class="hypo-mag" id="card-mag">M 8.2</span>
         <div style="text-align:right;">
-          <div style="font-size:10px; color:var(--text-muted);">M_def: <span id="card-m-def">8.1</span> | M_low: <span id="card-m-low">8.2</span></div>
+          <div style="font-size:9.5px; color:var(--text-muted);">M_def: <span id="card-m-def">8.1</span> | M_low: <span id="card-m-low">8.2</span></div>
           <div style="font-size:9.5px; color:var(--cyan);">Mw (Long Period): <span id="card-mw">8.2</span></div>
         </div>
-      </div>
-      <div class="hypo-region" id="card-region">Offshore Miyagi Prefecture, Japan</div>
-      <div class="data-row" style="margin-top:4px;">
-        <span class="data-label">Coordinates:</span>
-        <span class="data-value" id="card-coords">38.322° N, 142.369° E</span>
-      </div>
-      <div class="data-row">
-        <span class="data-label">Focal Depth:</span>
-        <span class="data-value" id="card-depth">28.0 km</span>
       </div>
       <div class="depth-meter">
         <div class="depth-fill" id="card-depth-bar"></div>
       </div>
-      <div class="data-row" style="margin-top:4px;">
+      <div class="data-row" style="margin-top:2px;">
         <span class="data-label">Focal Mechanism:</span>
         <span class="data-value" id="card-mech">Strike 195° / Dip 14°</span>
       </div>
@@ -810,14 +1268,18 @@ html, body {
       </div>
       <div class="data-row">
         <span class="data-label">Trench Interface:</span>
-        <span class="data-value" id="card-trench">Pacific Subduction</span>
+        <span class="data-value" id="card-trench" style="max-width:175px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Pacific Subduction</span>
       </div>
     </div>
   </aside>
 
-  <!-- Center: 3D Earth Globe Viewport -->
+  <!-- Center: 3D Earth Globe Viewport + Fault Lines + Station Triangles + PiP Monitor -->
   <section class="viewport-panel" id="viewport-container">
     <canvas id="globe-canvas"></canvas>
+    <canvas id="globe-overlay-canvas"></canvas>
+
+    <!-- Epicentral Callout Tag -->
+    <div class="epicenter-callout-pill" id="epicenter-callout">&#8594; M8.2 Offshore Miyagi Prefecture, Japan</div>
 
     <!-- EEW Tactical Alert Banner -->
     <div class="eew-alert-banner" id="eew-banner">
@@ -827,10 +1289,39 @@ html, body {
 
     <!-- On-Canvas HUD Status -->
     <div class="viewport-overlay-hud">
-      <div>VIEW: <span id="hud-cam-preset" style="color:var(--text-bright);">EPICENTER ORBIT</span></div>
+      <div>VIEW: <span id="hud-cam-preset" style="color:var(--text-bright);">EPICENTER ORBIT</span> | RENDERER: <span id="hud-renderer-mode" style="color:var(--emerald);">WEBGL2 + 3D VECTOR HUD</span></div>
       <div>P-WAVE SPEED: <span style="color:var(--cyan);">7.8 km/s</span> | S-WAVE: <span style="color:var(--amber);">4.4 km/s</span></div>
       <div>EXPANDING RADIUS: <span id="hud-radius-p" style="color:var(--cyan);">0 km</span> (P) / <span id="hud-radius-s" style="color:var(--amber);">0 km</span> (S)</div>
-      <div>DRAG: ROTATE 3D GLOBE | SCROLL: ZOOM</div>
+      <div>DRAG: ROTATE 3D GLOBE | SCROLL: ZOOM | CLICK TRIANGLE: MONITOR STATION</div>
+    </div>
+
+    <!-- Bottom-Left Picture-in-Picture Live Station Waveform Monitor -->
+    <div class="pip-monitor-box" id="pip-monitor-box">
+      <div class="pip-monitor-header">
+        <span id="pip-monitor-title">Miyagi Monitoring</span>
+        <select id="pip-station-select" class="select-input" style="padding:1px 4px; font-size:9.5px; height:18px;"></select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:1px 8px; font-family:var(--font-mono); font-size:8.5px; color:var(--text-muted); background:rgba(12,18,30,0.92); border-bottom:1px solid rgba(30,45,68,0.6);">
+        <span id="pip-sta-id" style="color:var(--cyan); font-weight:700;">JP.MYG004</span>
+        <span id="pip-sta-pga" style="color:var(--amber);">PGA: 2.75g</span>
+        <span id="pip-sta-dist">Dist: 75 km</span>
+      </div>
+      <div class="pip-canvas-wrap">
+        <canvas id="pip-waveform-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Bottom-Right Tectonic Fault Line Types Legend -->
+    <div class="fault-legend-box" id="fault-legend-box">
+      <div style="font-weight:800; color:var(--text-bright); border-bottom:1px solid var(--border-subtle); padding-bottom:2px; margin-bottom:2px;">
+        Fault Line Types (updated)
+      </div>
+      <div class="fault-legend-row"><span class="fault-swatch" style="background:#d633ff;"></span><span style="color:#d633ff;">SUBDUCTION</span></div>
+      <div class="fault-legend-row"><span class="fault-swatch" style="background:#2eb85c;"></span><span style="color:#2eb85c;">DIVERGENT</span></div>
+      <div class="fault-legend-row"><span class="fault-swatch" style="background:#d96b27;"></span><span style="color:#d96b27;">TRANSFORM</span></div>
+      <div class="fault-legend-row"><span class="fault-swatch" style="background:#00d9ff;"></span><span style="color:#00d9ff;">NORMAL</span></div>
+      <div class="fault-legend-row"><span class="fault-swatch" style="background:#2b8cbe;"></span><span style="color:#2b8cbe;">REVERSE</span></div>
+      <div class="fault-legend-row"><span class="fault-swatch" style="background:#7f8c8d;"></span><span style="color:#95a5a6;">OTHER</span></div>
     </div>
 
     <!-- Floating View Controls -->
@@ -839,12 +1330,25 @@ html, body {
       <button class="btn" id="btn-cam-north" title="Reset North up">NORTH UP</button>
       <button class="btn" id="btn-cam-slab" title="View Wadati-Benioff subduction plane">SLAB ANGLE</button>
       <button class="btn" id="btn-cam-autorotate" title="Toggle automatic turntable rotation">TURNTABLE</button>
+      <button class="btn active" id="btn-cam-director" title="Toggle 24/7 Broadcast Auto-Camera Director">AUTO DIRECTOR</button>
     </div>
   </section>
 
-  <!-- Right: Municipality Intensity & Countdown Leaderboard -->
+  <!-- Right: Live Quality-Graded Earthquake Feed + Affected Localities & Countdowns -->
   <aside class="leaderboard-panel">
     <div class="leaderboard-header">
+      <div class="leaderboard-title">
+        <span>LIVE EARTHQUAKES (M3.0+ // UTC)</span>
+        <span class="badge-tag pass" id="feed-count-badge">LIVE CATALOG</span>
+      </div>
+      <div class="leaderboard-subtitle">QUALITY C OR BETTER // CLICK EVENT TO INSPECT</div>
+    </div>
+
+    <div class="live-event-list" id="live-event-list-container">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div class="leaderboard-header" style="border-top:1px solid var(--border-subtle);">
       <div class="leaderboard-title">AFFECTED LOCALITIES & COUNTDOWNS</div>
       <div class="leaderboard-subtitle">RANKED BY SHAKING INTENSITY // REAL-TIME WAVE ARRIVAL</div>
     </div>
@@ -865,7 +1369,7 @@ html, body {
         <span style="color:var(--purple);">&#9632; GLINT REJECTED</span>
       </div>
     </div>
-    <div style="flex:1; position:relative;">
+    <div class="helicorder-canvas-wrap">
       <canvas id="helicorder-canvas"></canvas>
     </div>
   </footer>
@@ -908,19 +1412,29 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
   // State Management
   const state = {
     currentScenarioId: "scenario_subduction_megathrust",
-    simTime: 0.0,
+    simTime: 8.5,
     isPlaying: false,
     speedMultiplier: 1.0,
     homeCity: "Tokyo, JP",
     alarmEnabled: false,
     autoRotate: false,
+    autoDirector: true,
+    directorTimer: 0.0,
+    liveMode: false,
+    liveFeedStatus: "OFFLINE",
+    liveWs: null,
+    livePollInterval: null,
+    liveWaveTick: 0.0,
+    selectedPipStationIdx: 0,
+    liveEvents: [],
+    liveStations: [],
     camera: {
-      yaw: 0.0,
-      pitch: 0.25,
-      distance: 2.8,
-      targetYaw: 0.0,
-      targetPitch: 0.25,
-      targetDistance: 2.8,
+      yaw: (142.36 * Math.PI) / 180.0,
+      pitch: (38.32 * Math.PI) / 180.0 * 0.8,
+      distance: 2.35,
+      targetYaw: (142.36 * Math.PI) / 180.0,
+      targetPitch: (38.32 * Math.PI) / 180.0 * 0.8,
+      targetDistance: 2.35,
       isDragging: false,
       lastMouseX: 0,
       lastMouseY: 0,
@@ -928,7 +1442,150 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     audioCtx: null,
     alarmOsc: null,
     alarmGain: null,
+    projectedStations: [],
   };
+
+  // Tectonic Plate Boundary Fault Lines by Type (Broadcast Overlay)
+  const FAULT_LINE_SEGMENTS = [
+    // SUBDUCTION (#d633ff)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[34.5,138.5],[36.0,141.8],[38.3,144.2],[40.8,144.8],[42.8,146.5],[45.5,150.5],[49.0,156.5],[52.5,161.0]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[34.5,138.5],[33.0,136.0],[31.2,132.8],[28.5,130.5],[25.5,127.8],[23.5,122.5]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[-12.0,165.5],[-15.5,167.2],[-18.0,168.3],[-20.5,169.5],[-22.5,171.5]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[-18.0,-173.0],[-22.0,-175.0],[-27.0,-176.8],[-32.5,-178.5],[-37.5,179.0],[-41.5,176.0]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[-10.0,-79.5],[-16.0,-75.0],[-22.0,-71.2],[-28.0,-71.8],[-35.0,-73.2],[-43.0,-75.5]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[51.5,-178.0],[52.5,-170.0],[54.5,-162.0],[57.0,-153.0],[59.8,-146.0]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[40.4,-125.0],[43.5,-125.2],[46.5,-125.5],[49.2,-127.0]] },
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[5.5,93.0],[0.5,97.5],[-4.5,101.5],[-8.5,107.0],[-10.5,115.0],[-10.2,123.0]] },
+    // TRANSFORM (#d96b27)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[40.4,-124.4],[38.0,-122.6],[35.5,-120.5],[34.0,-117.2],[32.5,-115.2]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[40.8,27.0],[40.7,30.5],[41.0,34.5],[39.8,38.8],[38.5,41.5]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[37.0,36.2],[38.2,38.0],[39.0,40.2]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[-41.5,174.0],[-43.2,171.2],[-44.8,168.0],[-46.2,166.2]] },
+    // DIVERGENT (#2eb85c)
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[28.0,-112.0],[23.0,-108.5],[15.0,-104.5],[5.0,-102.0],[-8.0,-107.5],[-22.0,-113.5]] },
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[64.0,-22.0],[52.0,-35.0],[38.0,-30.0],[24.0,-45.0],[10.0,-41.0],[0.0,-18.0],[-15.0,-13.0]] },
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[27.0,34.5],[20.0,38.5],[13.0,43.0],[11.5,51.0]] },
+    // NORMAL (#00d9ff)
+    { type: "NORMAL", color: "#00d9ff", pts: [[11.0,41.0],[5.0,37.5],[-2.0,36.0],[-9.0,34.0],[-15.0,35.0]] },
+    { type: "NORMAL", color: "#00d9ff", pts: [[51.5,104.0],[53.5,108.0],[55.8,110.2]] },
+    // REVERSE (#2b8cbe)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[34.0,73.0],[31.0,78.0],[28.5,84.0],[27.5,90.0],[27.0,95.5]] },
+    { type: "REVERSE", color: "#2b8cbe", pts: [[36.0,47.0],[33.0,50.5],[29.5,54.0],[27.0,57.5]] },
+    // OTHER (#7f8c8d)
+    { type: "OTHER", color: "#7f8c8d", pts: [[35.5,139.2],[36.5,138.0],[37.5,137.2]] },
+    { type: "OTHER", color: "#7f8c8d", pts: [[36.0,-5.5],[37.2,1.0],[38.0,11.0],[37.5,15.5]] }
+  ];
+
+  // Convert numeric MMI to Roman numeral and color
+  function mmiToRomanAndColor(mmi) {
+    const v = Number(mmi) || 1.0;
+    if (v >= 9.5) return { roman: "X+", color: "#c81e32", label: "EXTREME" };
+    if (v >= 8.5) return { roman: "IX", color: "#e62828", label: "VIOLENT" };
+    if (v >= 7.5) return { roman: "VIII", color: "#ff5014", label: "SEVERE" };
+    if (v >= 6.5) return { roman: "VII", color: "#ff8c00", label: "VERY STRONG" };
+    if (v >= 5.5) return { roman: "VI", color: "#ffc800", label: "STRONG" };
+    if (v >= 4.5) return { roman: "V", color: "#8cd21e", label: "MODERATE" };
+    if (v >= 3.5) return { roman: "IV", color: "#28beaa", label: "LIGHT" };
+    if (v >= 2.5) return { roman: "III", color: "#1e90ff", label: "WEAK" };
+    if (v >= 1.5) return { roman: "II", color: "#3b6998", label: "FEW" };
+    return { roman: "I", color: "#4b5d73", label: "MINIMAL" };
+  }
+
+  // Compute Great Circle distance in km
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const toRad = Math.PI / 180.0;
+    const dLat = (lat2 - lat1) * toRad;
+    const dLon = (lon2 - lon1) * toRad;
+    const a = Math.sin(dLat * 0.5) * Math.sin(dLat * 0.5) +
+              Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) *
+              Math.sin(dLon * 0.5) * Math.sin(dLon * 0.5);
+    return 6371.0 * 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0.0, 1.0 - a)));
+  }
+
+  // Derive station coordinates around hypocenter if station only has dist_km
+  function getStationCoords(sta, idx, total, hypoLat, hypoLon) {
+    if (typeof sta.lat === "number" && typeof sta.lon === "number") {
+      return { lat: sta.lat, lon: sta.lon };
+    }
+    const distDeg = (sta.dist_km || 80.0) / 111.19;
+    const angle = (idx / Math.max(1, total)) * Math.PI * 2.0 + 0.45;
+    const lat = Math.max(-85, Math.min(85, hypoLat + distDeg * Math.cos(angle)));
+    const lon = hypoLon + (distDeg * Math.sin(angle)) / Math.max(0.2, Math.cos((hypoLat * Math.PI) / 180.0));
+    return { lat, lon };
+  }
+
+  // Generate dense synthetic regional monitoring array around active hypocenter
+  function getRegionalArrayNodes(scen) {
+    const hypo = scen.hypocenter || { lat: 38.32, lon: 142.36, depth_km: 29.0 };
+    const nodes = [];
+    const baseStations = scen.stations || [];
+    baseStations.forEach((s, i) => {
+      const c = getStationCoords(s, i, baseStations.length, hypo.lat, hypo.lon);
+      nodes.push({
+        id: s.id,
+        net: s.net || "GS",
+        name: s.name || s.id,
+        lat: c.lat,
+        lon: c.lon,
+        dist_km: s.dist_km || haversineKm(hypo.lat, hypo.lon, c.lat, c.lon),
+        pga_g: s.pga_g || 0.1,
+        primary: true,
+        stationIndex: i,
+      });
+    });
+
+    // Add dense regional seismic array triangles around the rupture zone
+    const rings = [
+      { count: 10, radiusDeg: 1.1 },
+      { count: 14, radiusDeg: 2.3 },
+      { count: 18, radiusDeg: 4.0 },
+      { count: 20, radiusDeg: 6.5 },
+    ];
+    let seq = 1;
+    rings.forEach((ring, rIdx) => {
+      for (let k = 0; k < ring.count; k++) {
+        const ang = (k / ring.count) * Math.PI * 2.0 + rIdx * 0.37;
+        const jitterR = ring.radiusDeg * (0.85 + 0.3 * Math.sin(seq * 1.9));
+        const lat = Math.max(-82, Math.min(82, hypo.lat + jitterR * Math.cos(ang)));
+        const lon = hypo.lon + (jitterR * Math.sin(ang)) / Math.max(0.25, Math.cos((hypo.lat * Math.PI) / 180.0));
+        const dKm = haversineKm(hypo.lat, hypo.lon, lat, lon);
+        const mag = scen.magnitude ? scen.magnitude.mw : 7.0;
+        const hypDist = Math.hypot(dKm, hypo.depth_km || 25.0);
+        const pgaEst = Math.min(1.5, Math.pow(10, 0.52 * mag - 1.45 * Math.log10(hypDist + 12.0) - 1.15));
+        nodes.push({
+          id: `N${String(seq).padStart(2, "0")}`,
+          net: "ARRAY",
+          name: `Node ${seq}`,
+          lat,
+          lon,
+          dist_km: dKm,
+          pga_g: pgaEst,
+          primary: false,
+          stationIndex: seq % Math.max(1, baseStations.length),
+        });
+        seq++;
+      }
+    });
+
+    // Also include live FDSN stations when present
+    if (state.liveStations && state.liveStations.length > 0) {
+      state.liveStations.forEach((ls, idx) => {
+        const dKm = haversineKm(hypo.lat, hypo.lon, ls.lat, ls.lon);
+        nodes.push({
+          id: ls.sta || `LS${idx}`,
+          net: ls.net || "IU",
+          name: ls.site_name || ls.sta || `Station ${idx}`,
+          lat: ls.lat,
+          lon: ls.lon,
+          dist_km: dKm,
+          pga_g: ls.pga_g || 0.02,
+          primary: false,
+          stationIndex: idx % Math.max(1, baseStations.length),
+        });
+      });
+    }
+    return nodes;
+  }
 
   // Safe fallback scenario if window.QUAKESNAIL_OFFLINE_SCENARIOS is empty
   function getActiveScenario() {
@@ -948,6 +1605,8 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       magnitude: { mw: 7.0, m_default: 7.0, m_low: 7.0, m_ultralow: 7.0 },
       region: "Central Seismic Zone",
       mechanism: { strike: 180, dip: 45, rake: 90 },
+      uncertainty_ellipsoid: { sigma_x_km: 1.5, sigma_y_km: 1.8, sigma_z_km: 2.4 },
+      quality_metrics: { grade: "A", revision: 6, stations_total: 42, stations_used: 38, stations_err: 1, err_depth_km: 2.4, err_ns_km: 1.5, err_ew_km: 1.8, err_origin_s: 0.4, pct_match: 96.2, max_mmi: 7.5, max_mmi_roman: "VIII" },
       wadati_benioff: { slab_dip_deg: 35.0, slab_strike_deg: 180.0, depth_profile: [[0, 10], [100, 50], [200, 120]] },
       municipalities: [
         { name: "Metropolis", country_code: "GL", lat: 35.7, lon: 139.8, distance_km: 15.0, pga_g: 0.45, pgv_cms: 42.0, mmi: 7.5, jma_shindo: "6-", seconds_p: 2.1, seconds_s: 3.8 }
@@ -1002,13 +1661,24 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
   }
 
   // ---------------------------------------------------------------------------
-  // WebGL2 3D Earth Globe Renderer
+  // WebGL2 / WebGL1 3D Earth Globe Renderer + 2D Broadcast Vector Overlay
   // ---------------------------------------------------------------------------
   const canvas = document.getElementById("globe-canvas");
-  const gl = canvas.getContext("webgl2", { antialias: true, alpha: false });
+  const overlayCanvas = document.getElementById("globe-overlay-canvas");
+  const oCtx = overlayCanvas ? overlayCanvas.getContext("2d") : null;
 
-  if (!gl) {
-    console.error("WebGL2 not supported on this client.");
+  let gl = null;
+  let glReady = false;
+  let prog = null;
+  let vao = null;
+  let uMvpLoc = null, uModelLoc = null, uHypoLoc = null, uRadPLoc = null, uRadSLoc = null, uSimTimeLoc = null, uCamPosLoc = null;
+  const indices = [];
+
+  try {
+    gl = canvas.getContext("webgl2", { antialias: true, alpha: false, preserveDrawingBuffer: true }) ||
+         canvas.getContext("webgl", { antialias: true, alpha: false, preserveDrawingBuffer: true });
+  } catch (err) {
+    gl = null;
   }
 
   // Vertex Shader: Transforms UV sphere vertices
@@ -1062,7 +1732,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     vec2 f = fract(p);
     vec2 u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
-               mix(mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+               mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
   }
 
   float fbm(vec2 p) {
@@ -1089,12 +1759,17 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     vec2 mapCoord = vec2(lon * 2.5, lat * 3.5);
     float landNoise = fbm(mapCoord);
 
-    // Land vs Ocean base palette
-    vec3 oceanColor = vec3(0.03, 0.08, 0.16);
-    vec3 landColor = vec3(0.10, 0.18, 0.14);
+    // Land vs Ocean base palette (GlobalQuake dark ocean blue + emerald landmass)
+    vec3 oceanColor = vec3(0.04, 0.13, 0.25);
+    vec3 landColor = vec3(0.12, 0.26, 0.18);
 
     bool isLand = landNoise > 0.44;
     vec3 baseColor = isLand ? landColor : oceanColor;
+
+    // Coastline highlight
+    if (abs(landNoise - 0.44) < 0.012) {
+      baseColor += vec3(0.08, 0.18, 0.22);
+    }
 
     // Tactical latitude/longitude grid lines every 15 degrees
     float latDeg = lat * 180.0 / PI;
@@ -1102,8 +1777,8 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     float gridLat = abs(fract(latDeg / 15.0 + 0.5) - 0.5) * 15.0;
     float gridLon = abs(fract(lonDeg / 15.0 + 0.5) - 0.5) * 15.0;
 
-    if (gridLat < 0.35 || gridLon < 0.35) {
-      baseColor += vec3(0.04, 0.09, 0.14);
+    if (gridLat < 0.30 || gridLon < 0.30) {
+      baseColor += vec3(0.03, 0.07, 0.12);
     }
 
     // Great circle distance to epicenter
@@ -1114,28 +1789,32 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
 
     // Expanding P-Wave Ring (Cyan #00e5ff)
     float pDiff = abs(distKm - u_radiusP);
-    if (u_radiusP > 0.0 && pDiff < 35.0) {
-      float intensity = 1.0 - (pDiff / 35.0);
+    if (u_radiusP > 0.0 && pDiff < 38.0) {
+      float intensity = 1.0 - (pDiff / 38.0);
       baseColor += vec3(0.0, 0.90, 1.0) * intensity * 0.95;
     }
 
-    // Expanding S-Wave Ring (Amber/Red #ff5252)
+    // Expanding S-Wave Ring (Red/Amber #ff3355)
     float sDiff = abs(distKm - u_radiusS);
-    if (u_radiusS > 0.0 && sDiff < 45.0) {
+    if (u_radiusS > 0.0 && sDiff < 48.0) {
       float pulse = 0.8 + 0.2 * sin(u_simTime * 8.0);
-      float intensity = (1.0 - (sDiff / 45.0)) * pulse;
+      float intensity = (1.0 - (sDiff / 48.0)) * pulse;
       baseColor += vec3(1.0, 0.25, 0.25) * intensity * 1.25;
     }
 
-    // Epicenter pulsing beacon
-    if (distKm < 65.0) {
+    // Epicenter pulsing aura
+    if (distKm < 90.0) {
       float beaconPulse = 0.5 + 0.5 * sin(u_simTime * 6.0);
-      baseColor += vec3(1.0, 0.1, 0.2) * (1.0 - distKm / 65.0) * beaconPulse;
+      baseColor += vec3(1.0, 0.18, 0.22) * (1.0 - distKm / 90.0) * beaconPulse * 0.85;
     }
 
-    // Atmospheric limb Fresnel glow
+    // Directional key lighting + Atmospheric limb Fresnel glow
+    vec3 lightDir = normalize(u_camPos + vec3(0.5, 0.8, 0.4));
+    float diff = 0.68 + 0.32 * max(dot(N, lightDir), 0.0);
+    baseColor *= diff;
+
     float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.5);
-    baseColor += vec3(0.0, 0.6, 0.9) * fresnel * 0.45;
+    baseColor += vec3(0.05, 0.55, 0.90) * fresnel * 0.48;
 
     fragColor = vec4(baseColor, 1.0);
   }
@@ -1143,6 +1822,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
 
   // Compile Shader Helper
   function compileShader(type, src) {
+    if (!gl) return null;
     const s = gl.createShader(type);
     gl.shaderSource(s, src);
     gl.compileShader(s);
@@ -1154,24 +1834,12 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     return s;
   }
 
-  const vs = compileShader(gl.VERTEX_SHADER, vsSource);
-  const fs = compileShader(gl.FRAGMENT_SHADER, fsSource);
-  const prog = gl.createProgram();
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.linkProgram(prog);
-
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error("Program link failed:", gl.getProgramInfoLog(prog));
-  }
-
-  // Sphere Geometry Generation
+  // Sphere Geometry Generation (CCW front-face winding for outward normals)
   const SPHERE_LAT_SEGS = 48;
   const SPHERE_LON_SEGS = 72;
   const positions = [];
   const normals = [];
   const uvs = [];
-  const indices = [];
 
   for (let latIdx = 0; latIdx <= SPHERE_LAT_SEGS; latIdx++) {
     const theta = (latIdx * Math.PI) / SPHERE_LAT_SEGS;
@@ -1198,50 +1866,74 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       const first = latIdx * (SPHERE_LON_SEGS + 1) + lonIdx;
       const second = first + SPHERE_LON_SEGS + 1;
 
-      indices.push(first, second, first + 1);
-      indices.push(second, second + 1, first + 1);
+      // Counter-clockwise winding when viewed from outside the sphere
+      indices.push(first, first + 1, second);
+      indices.push(second, first + 1, second + 1);
     }
   }
 
-  const vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
+  if (gl && typeof gl.createVertexArray === "function") {
+    try {
+      const vs = compileShader(gl.VERTEX_SHADER, vsSource);
+      const fs = compileShader(gl.FRAGMENT_SHADER, fsSource);
+      if (vs && fs) {
+        prog = gl.createProgram();
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
 
-  const posBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+        if (gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+          vao = gl.createVertexArray();
+          gl.bindVertexArray(vao);
 
-  const normBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(1);
-  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+          const posBuf = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(0);
+          gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
-  const uvBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(2);
-  gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
+          const normBuf = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, normBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(1);
+          gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
 
-  const idxBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+          const uvBuf = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(2);
+          gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
 
-  // Uniform Locations
-  const uMvpLoc = gl.getUniformLocation(prog, "u_mvp");
-  const uModelLoc = gl.getUniformLocation(prog, "u_model");
-  const uHypoLoc = gl.getUniformLocation(prog, "u_hypoPos");
-  const uRadPLoc = gl.getUniformLocation(prog, "u_radiusP");
-  const uRadSLoc = gl.getUniformLocation(prog, "u_radiusS");
-  const uSimTimeLoc = gl.getUniformLocation(prog, "u_simTime");
-  const uCamPosLoc = gl.getUniformLocation(prog, "u_camPos");
+          const idxBuf = gl.createBuffer();
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
-  // Basic Matrix Math Helpers
+          uMvpLoc = gl.getUniformLocation(prog, "u_mvp");
+          uModelLoc = gl.getUniformLocation(prog, "u_model");
+          uHypoLoc = gl.getUniformLocation(prog, "u_hypoPos");
+          uRadPLoc = gl.getUniformLocation(prog, "u_radiusP");
+          uRadSLoc = gl.getUniformLocation(prog, "u_radiusS");
+          uSimTimeLoc = gl.getUniformLocation(prog, "u_simTime");
+          uCamPosLoc = gl.getUniformLocation(prog, "u_camPos");
+          glReady = true;
+        }
+      }
+    } catch (glInitErr) {
+      console.warn("WebGL2 shader initialization fallback:", glInitErr);
+      glReady = false;
+    }
+  }
+
+  const rendererModeEl = document.getElementById("hud-renderer-mode");
+  if (rendererModeEl) {
+    rendererModeEl.textContent = glReady ? "WEBGL2 + 3D VECTOR HUD" : "3D SOFTWARE + VECTOR HUD";
+  }
+
+  // Column-Major Matrix Math Helpers (OpenGL / WebGL2 standard)
   function mat4Perspective(out, fovy, aspect, near, far) {
     const f = 1.0 / Math.tan(fovy / 2);
     out.fill(0);
-    out[0] = f / aspect;
+    out[0] = f / Math.max(0.1, aspect);
     out[5] = f;
     out[10] = (far + near) / (near - far);
     out[11] = -1;
@@ -1273,12 +1965,15 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     out[15] = 1;
   }
 
+  // Column-major matrix multiplication: out = a * b
   function mat4Multiply(out, a, b) {
-    for (let i = 0; i < 4; ++i) {
-      for (let j = 0; j < 4; ++j) {
-        let sum = 0;
-        for (let k = 0; k < 4; ++k) sum += a[i * 4 + k] * b[k * 4 + j];
-        out[i * 4 + j] = sum;
+    for (let c = 0; c < 4; ++c) {
+      for (let r = 0; r < 4; ++r) {
+        let sum = 0.0;
+        for (let k = 0; k < 4; ++k) {
+          sum += a[k * 4 + r] * b[c * 4 + k];
+        }
+        out[c * 4 + r] = sum;
       }
     }
   }
@@ -1299,12 +1994,310 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     ];
   }
 
-  // Camera Orbit Controls
+  // Project 3D Unit Sphere Vector to 2D Canvas Screen Coordinates
+  function projectVec3ToScreen(vec, mvp, eye, w, h) {
+    // Horizon occlusion check: dot(vec, normalize(eye)) > 0.12
+    const eyeLen = Math.hypot(eye[0], eye[1], eye[2]) || 1.0;
+    const dotVis = (vec[0] * eye[0] + vec[1] * eye[1] + vec[2] * eye[2]) / eyeLen;
+    if (dotVis < 0.12) return null;
+
+    const x = vec[0], y = vec[1], z = vec[2];
+    const clipX = mvp[0] * x + mvp[4] * y + mvp[8] * z + mvp[12];
+    const clipY = mvp[1] * x + mvp[5] * y + mvp[9] * z + mvp[13];
+    const clipW = mvp[3] * x + mvp[7] * y + mvp[11] * z + mvp[15];
+    if (clipW <= 0.001) return null;
+
+    const ndcX = clipX / clipW;
+    const ndcY = clipY / clipW;
+    return {
+      x: (ndcX * 0.5 + 0.5) * w,
+      y: (1.0 - (ndcY * 0.5 + 0.5)) * h,
+      dotVis,
+    };
+  }
+
+  // Render 3D Vector Overlay: Fault Lines, Dense Station Triangles, Wavefront Rings, Epicenter Marker
+  function renderGlobeOverlay(w, h, eye, mvp, scen) {
+    if (!oCtx || !overlayCanvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (overlayCanvas.width !== Math.floor(w * dpr) || overlayCanvas.height !== Math.floor(h * dpr)) {
+      overlayCanvas.width = Math.floor(w * dpr);
+      overlayCanvas.height = Math.floor(h * dpr);
+    }
+
+    oCtx.save();
+    oCtx.scale(dpr, dpr);
+    oCtx.clearRect(0, 0, w, h);
+
+    // Composite WebGL2 3D Earth frame directly onto overlay canvas so Firefox WebRender / ANGLE D3D11
+    // never drops the lower WebGL layer during multi-canvas composition.
+    if (glReady && canvas && canvas.width > 0 && canvas.height > 0) {
+      try {
+        oCtx.drawImage(canvas, 0, 0, w, h);
+      } catch (_) {}
+    }
+
+    // Software 3D Globe Fallback when WebGL2 is unavailable in headless/restricted browsers
+    if (!glReady) {
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const dist = Math.max(1.05, state.camera.distance);
+      const f = 1.0 / Math.tan((22.5 * Math.PI) / 180.0);
+      const globeRad = (h * 0.5) * (f / Math.sqrt(dist * dist - 1.0));
+      const grad = oCtx.createRadialGradient(cx - globeRad * 0.25, cy - globeRad * 0.25, globeRad * 0.08, cx, cy, globeRad);
+      grad.addColorStop(0, "#123862");
+      grad.addColorStop(0.7, "#09213f");
+      grad.addColorStop(1, "#040e1d");
+      oCtx.fillStyle = grad;
+      oCtx.beginPath();
+      oCtx.arc(cx, cy, globeRad, 0, Math.PI * 2);
+      oCtx.fill();
+      oCtx.strokeStyle = "rgba(0, 195, 255, 0.42)";
+      oCtx.lineWidth = 1.6;
+      oCtx.stroke();
+
+      // Graticule latitude & longitude lines on software fallback
+      oCtx.strokeStyle = "rgba(80, 145, 205, 0.16)";
+      oCtx.lineWidth = 0.8;
+      for (let lat = -60; lat <= 60; lat += 15) {
+        oCtx.beginPath();
+        let started = false;
+        for (let lon = -180; lon <= 180; lon += 5) {
+          const p = projectVec3ToScreen(latLonToVec3(lat, lon), mvp, eye, w, h);
+          if (p) {
+            if (!started) { oCtx.moveTo(p.x, p.y); started = true; }
+            else oCtx.lineTo(p.x, p.y);
+          } else {
+            started = false;
+          }
+        }
+        oCtx.stroke();
+      }
+      for (let lon = -180; lon < 180; lon += 15) {
+        oCtx.beginPath();
+        let started = false;
+        for (let lat = -75; lat <= 75; lat += 5) {
+          const p = projectVec3ToScreen(latLonToVec3(lat, lon), mvp, eye, w, h);
+          if (p) {
+            if (!started) { oCtx.moveTo(p.x, p.y); started = true; }
+            else oCtx.lineTo(p.x, p.y);
+          } else {
+            started = false;
+          }
+        }
+        oCtx.stroke();
+      }
+    }
+
+    // 1. Render Tectonic Fault Line Segments colored by Type
+    oCtx.lineCap = "round";
+    oCtx.lineJoin = "round";
+    FAULT_LINE_SEGMENTS.forEach((seg) => {
+      oCtx.strokeStyle = seg.color;
+      oCtx.lineWidth = seg.type === "SUBDUCTION" ? 2.2 : 1.6;
+      oCtx.beginPath();
+      let penDown = false;
+      for (let i = 0; i < seg.pts.length; i++) {
+        const v = latLonToVec3(seg.pts[i][0], seg.pts[i][1]);
+        const p = projectVec3ToScreen(v, mvp, eye, w, h);
+        if (p) {
+          if (!penDown) {
+            oCtx.moveTo(p.x, p.y);
+            penDown = true;
+          } else {
+            oCtx.lineTo(p.x, p.y);
+          }
+        } else {
+          penDown = false;
+        }
+      }
+      oCtx.stroke();
+    });
+
+    // 2. Render Expanding 3D Spherical P and S Wavefront Circles + Max Expected Intensity Ring
+    const hypo = scen.hypocenter || { lat: 38.32, lon: 142.36, depth_km: 29.0 };
+    const hypoVec = latLonToVec3(hypo.lat, hypo.lon);
+    const rP = state.simTime * 7.8;
+    const rS = state.simTime * 4.4;
+
+    function drawSphericalCircle(radiusKm, strokeStyle, lineWidth, dashed) {
+      if (radiusKm <= 2.0) return;
+      const angRad = radiusKm / 6371.0;
+      const sinA = Math.sin(angRad);
+      const cosA = Math.cos(angRad);
+
+      // Orthonormal tangent basis around hypoVec
+      let upRef = Math.abs(hypoVec[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+      let t1x = upRef[1] * hypoVec[2] - upRef[2] * hypoVec[1];
+      let t1y = upRef[2] * hypoVec[0] - upRef[0] * hypoVec[2];
+      let t1z = upRef[0] * hypoVec[1] - upRef[1] * hypoVec[0];
+      const t1Len = Math.hypot(t1x, t1y, t1z) || 1.0;
+      t1x /= t1Len; t1y /= t1Len; t1z /= t1Len;
+
+      const t2x = hypoVec[1] * t1z - hypoVec[2] * t1y;
+      const t2y = hypoVec[2] * t1x - hypoVec[0] * t1z;
+      const t2z = hypoVec[0] * t1y - hypoVec[1] * t1x;
+
+      oCtx.save();
+      if (dashed) oCtx.setLineDash([4, 4]);
+      oCtx.strokeStyle = strokeStyle;
+      oCtx.lineWidth = lineWidth;
+      oCtx.beginPath();
+      let started = false;
+      const steps = 64;
+      for (let i = 0; i <= steps; i++) {
+        const phi = (i / steps) * Math.PI * 2.0;
+        const cP = Math.cos(phi), sP = Math.sin(phi);
+        const vx = cosA * hypoVec[0] + sinA * (cP * t1x + sP * t2x);
+        const vy = cosA * hypoVec[1] + sinA * (cP * t1y + sP * t2y);
+        const vz = cosA * hypoVec[2] + sinA * (cP * t1z + sP * t2z);
+        const pt = projectVec3ToScreen([vx, vy, vz], mvp, eye, w, h);
+        if (pt) {
+          if (!started) { oCtx.moveTo(pt.x, pt.y); started = true; }
+          else oCtx.lineTo(pt.x, pt.y);
+        } else {
+          started = false;
+        }
+      }
+      oCtx.stroke();
+      oCtx.restore();
+    }
+
+    drawSphericalCircle(rP, "#00e5ff", 1.8, false);
+    drawSphericalCircle(rS, "#ff3355", 2.4, false);
+    drawSphericalCircle(Math.max(120, (scen.magnitude ? scen.magnitude.mw : 7.0) * 65), "rgba(255, 200, 0, 0.45)", 1.1, true);
+
+    // 3. Render Dense Seismic Station Triangles (▲) Colored by Trigger & Ground Motion Intensity
+    const arrayNodes = getRegionalArrayNodes(scen);
+    state.projectedStations = [];
+    const drawnLabels = [];
+
+    arrayNodes.forEach((node) => {
+      const v = latLonToVec3(node.lat, node.lon);
+      const pt = projectVec3ToScreen(v, mvp, eye, w, h);
+      if (!pt) return;
+
+      const sReached = rS >= node.dist_km && rS > 0;
+      const pReached = rP >= node.dist_km && rP > 0;
+
+      let fillCol = "#2e8b57"; // Quiet station (green/teal)
+      let strokeCol = "#08121e";
+      let triSize = node.primary ? 6.8 : 5.0;
+
+      if (sReached) {
+        if (node.pga_g >= 0.35) fillCol = "#ff2244";
+        else if (node.pga_g >= 0.12) fillCol = "#ff9900";
+        else fillCol = "#ffe600";
+        triSize += 1.4;
+      } else if (pReached) {
+        fillCol = "#00e5ff";
+        triSize += 0.8;
+      }
+
+      // Draw upward station triangle ▲
+      oCtx.beginPath();
+      oCtx.moveTo(pt.x, pt.y - triSize);
+      oCtx.lineTo(pt.x - triSize * 0.88, pt.y + triSize * 0.75);
+      oCtx.lineTo(pt.x + triSize * 0.88, pt.y + triSize * 0.75);
+      oCtx.closePath();
+      oCtx.fillStyle = fillCol;
+      oCtx.fill();
+      oCtx.strokeStyle = strokeCol;
+      oCtx.lineWidth = 1.0;
+      oCtx.stroke();
+
+      // Highlight selected PiP station
+      const isSelectedSta = node.primary && node.stationIndex === state.selectedPipStationIdx;
+      if (isSelectedSta) {
+        oCtx.strokeStyle = "#ffffff";
+        oCtx.lineWidth = 1.5;
+        oCtx.strokeRect(pt.x - triSize - 3, pt.y - triSize - 3, (triSize + 3) * 2, (triSize + 3) * 2);
+      }
+
+      if (node.primary) {
+        const lx = pt.x + triSize + 3;
+        const ly = pt.y + 3;
+        const collides = !isSelectedSta && drawnLabels.some((dl) => Math.abs(dl.x - lx) < 38 && Math.abs(dl.y - ly) < 12);
+        if (!collides) {
+          oCtx.fillStyle = isSelectedSta ? "#ffdd00" : "#d9e6f7";
+          oCtx.font = "bold 9px ui-monospace, monospace";
+          oCtx.fillText(node.id, lx, ly);
+          drawnLabels.push({ x: lx, y: ly });
+        }
+      }
+
+      state.projectedStations.push({
+        x: pt.x,
+        y: pt.y,
+        r: triSize + 4,
+        stationIndex: node.stationIndex,
+        id: node.id,
+      });
+    });
+
+    // 4. Render Epicenter Crosshair (✕) and Magnitude / Depth Callout
+    const hypoPt = projectVec3ToScreen(hypoVec, mvp, eye, w, h);
+    const calloutEl = document.getElementById("epicenter-callout");
+    const mag = scen.magnitude ? scen.magnitude.mw : 7.0;
+    if (calloutEl) {
+      calloutEl.style.display = "block";
+      calloutEl.style.left = "14px";
+      calloutEl.style.top = "14px";
+      calloutEl.textContent = `\u2192 M${mag.toFixed(1)} ${scen.region || scen.name || "Epicenter"} (${hypo.depth_km.toFixed(1)} km)`;
+    }
+    if (hypoPt) {
+      const sz = 8.0;
+      oCtx.strokeStyle = "#ffffff";
+      oCtx.lineWidth = 3.2;
+      oCtx.beginPath();
+      oCtx.moveTo(hypoPt.x - sz, hypoPt.y - sz);
+      oCtx.lineTo(hypoPt.x + sz, hypoPt.y + sz);
+      oCtx.moveTo(hypoPt.x + sz, hypoPt.y - sz);
+      oCtx.lineTo(hypoPt.x - sz, hypoPt.y + sz);
+      oCtx.stroke();
+
+      oCtx.strokeStyle = "#ff2244";
+      oCtx.lineWidth = 1.8;
+      oCtx.stroke();
+
+      // Compact on-globe magnitude & depth tag next to crosshair
+      oCtx.font = "bold 10px ui-monospace, monospace";
+      const tagTxt = `M${mag.toFixed(1)} | ${hypo.depth_km.toFixed(1)}km`;
+      const tw = oCtx.measureText(tagTxt).width + 8;
+      const tx = hypoPt.x + 12;
+      const ty = hypoPt.y - 16;
+      oCtx.fillStyle = "rgba(10, 15, 24, 0.88)";
+      oCtx.fillRect(tx, ty, tw, 15);
+      oCtx.strokeStyle = "#ff3355";
+      oCtx.lineWidth = 1;
+      oCtx.strokeRect(tx, ty, tw, 15);
+      oCtx.fillStyle = "#ffffff";
+      oCtx.fillText(tagTxt, tx + 4, ty + 11);
+    }
+
+    oCtx.restore();
+  }
+
+  // Camera Orbit Controls + Station Click Selection
   canvas.addEventListener("mousedown", (e) => {
     state.camera.isDragging = true;
     state.camera.lastMouseX = e.clientX;
     state.camera.lastMouseY = e.clientY;
     initAudio();
+
+    // Check if user clicked a station triangle on the globe
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    for (let i = 0; i < state.projectedStations.length; i++) {
+      const st = state.projectedStations[i];
+      if (Math.hypot(mx - st.x, my - st.y) <= st.r + 3) {
+        state.selectedPipStationIdx = st.stationIndex;
+        const pipSel = document.getElementById("pip-station-select");
+        if (pipSel) pipSel.value = String(st.stationIndex);
+        break;
+      }
+    }
   });
 
   window.addEventListener("mouseup", () => {
@@ -1318,7 +2311,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     state.camera.lastMouseX = e.clientX;
     state.camera.lastMouseY = e.clientY;
 
-    state.camera.targetYaw += dx * 0.006;
+    state.camera.targetYaw -= dx * 0.006;
     state.camera.targetPitch = Math.max(-1.45, Math.min(1.45, state.camera.targetPitch + dy * 0.006));
   });
 
@@ -1328,6 +2321,158 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
   }, { passive: false });
 
   // ---------------------------------------------------------------------------
+  // Bottom-Left Picture-in-Picture (PiP) Live Station Waveform Monitor
+  // ---------------------------------------------------------------------------
+  const pipCanvas = document.getElementById("pip-waveform-canvas");
+  const pipCtx = pipCanvas ? pipCanvas.getContext("2d") : null;
+
+  function renderPipMonitor() {
+    if (!pipCanvas || !pipCtx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = pipCanvas.clientWidth || 285;
+    const h = pipCanvas.clientHeight || 110;
+    if (pipCanvas.width !== Math.floor(w * dpr) || pipCanvas.height !== Math.floor(h * dpr)) {
+      pipCanvas.width = Math.floor(w * dpr);
+      pipCanvas.height = Math.floor(h * dpr);
+    }
+
+    pipCtx.save();
+    pipCtx.scale(dpr, dpr);
+    pipCtx.fillStyle = "#060b12";
+    pipCtx.fillRect(0, 0, w, h);
+
+    const scen = getActiveScenario();
+    const stations = scen.stations || [];
+    if (stations.length === 0) {
+      pipCtx.restore();
+      return;
+    }
+
+    const idx = Math.max(0, Math.min(stations.length - 1, state.selectedPipStationIdx));
+    const sta = stations[idx];
+
+    // Update PiP Title & Stats
+    const titleEl = document.getElementById("pip-monitor-title");
+    if (titleEl) {
+      const shortRegion = (sta.name || sta.id).replace(/\s*\(.*?\)/g, "");
+      titleEl.textContent = `${shortRegion} Monitoring`;
+    }
+    const statIdEl = document.getElementById("pip-sta-id");
+    if (statIdEl) statIdEl.textContent = `${sta.net}.${sta.id}`;
+    const statPgaEl = document.getElementById("pip-sta-pga");
+    if (statPgaEl) statPgaEl.textContent = `PGA: ${sta.pga_g}g`;
+    const statDistEl = document.getElementById("pip-sta-dist");
+    if (statDistEl) statDistEl.textContent = `Dist: ${sta.dist_km.toFixed(0)} km`;
+
+    // Oscilloscope grid & scientific notation scale labels (-3.50e+04 to +3.50e+04)
+    const padL = 56;
+    const padR = 6;
+    const padT = 6;
+    const padB = 16;
+    const plotW = Math.max(20, w - padL - padR);
+    const plotH = Math.max(20, h - padT - padB);
+    const yMid = padT + plotH * 0.5;
+
+    pipCtx.strokeStyle = "#18283e";
+    pipCtx.lineWidth = 1;
+    [-1.0, -0.5, 0.0, 0.5, 1.0].forEach((frac) => {
+      const y = yMid - frac * (plotH * 0.44);
+      pipCtx.beginPath();
+      pipCtx.moveTo(padL, y);
+      pipCtx.lineTo(w - padR, y);
+      pipCtx.stroke();
+    });
+
+    const maxCounts = Math.max(1000, (sta.pga_gal || 343.0) * 102.0);
+    pipCtx.fillStyle = "#9fb3c8";
+    pipCtx.font = "8.5px ui-monospace, monospace";
+    pipCtx.fillText(`${maxCounts.toExponential(2)}`, 3, padT + 7);
+    pipCtx.fillText(`${(maxCounts * 0.5).toExponential(2)}`, 3, padT + plotH * 0.28);
+    pipCtx.fillText(`0.00e+00`, 3, yMid + 3);
+    pipCtx.fillText(`-${(maxCounts * 0.5).toExponential(2)}`, 3, padT + plotH * 0.74);
+    pipCtx.fillText(`-${maxCounts.toExponential(2)}`, 3, padT + plotH - 2);
+
+    // Filter bandpass label in bottom-left ("1 - 5 Hz") matching GlobalQuake broadcast monitor
+    pipCtx.fillStyle = "#ff4455";
+    pipCtx.font = "bold 9px ui-monospace, monospace";
+    pipCtx.fillText("1 - 5 Hz", 3, h - 3);
+
+    // Time ticks along bottom
+    const nowDate = new Date();
+    pipCtx.fillStyle = "#7a90a8";
+    pipCtx.font = "8.5px ui-monospace, monospace";
+    for (let tIdx = 0; tIdx <= 3; tIdx++) {
+      const tx = padL + (tIdx / 3) * plotW;
+      pipCtx.beginPath();
+      pipCtx.moveTo(tx, padT);
+      pipCtx.lineTo(tx, padT + plotH);
+      pipCtx.stroke();
+      const tickDate = new Date(nowDate.getTime() - (3 - tIdx) * 15000);
+      const hh = String(tickDate.getUTCHours()).padStart(2, "0");
+      const mm = String(tickDate.getUTCMinutes()).padStart(2, "0");
+      const ss = String(tickDate.getUTCSeconds()).padStart(2, "0");
+      pipCtx.fillText(`${hh}:${mm}:${ss}`, Math.max(padL, Math.min(w - 44, tx - 18)), h - 3);
+    }
+
+    // Draw full background trace + yellow 1-5 Hz bandpass oscilloscope trace (#ffdd00)
+    const wf = sta.waveform;
+    if (wf && wf.filtered && wf.filtered.length > 0) {
+      const n = wf.filtered.length;
+      const duration = (wf.times && wf.times.length > 0) ? wf.times[wf.times.length - 1] : 60.0;
+      const curPts = state.liveMode ? n : Math.max(30, Math.floor(Math.min(1.0, Math.max(0.25, state.simTime / duration)) * n));
+
+      // Full window dim background trace
+      pipCtx.strokeStyle = "rgba(110, 145, 185, 0.28)";
+      pipCtx.lineWidth = 1.0;
+      pipCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = padL + (i / n) * plotW;
+        const y = yMid - Math.max(-1.0, Math.min(1.0, wf.filtered[i])) * (plotH * 0.44);
+        if (i === 0) pipCtx.moveTo(x, y);
+        else pipCtx.lineTo(x, y);
+      }
+      pipCtx.stroke();
+
+      // Active yellow 1-5 Hz trace
+      pipCtx.strokeStyle = "#ffdd00";
+      pipCtx.lineWidth = 1.3;
+      pipCtx.beginPath();
+      for (let i = 0; i < curPts; i++) {
+        const x = padL + (i / n) * plotW;
+        let sample = wf.filtered[i];
+        if (state.liveMode) {
+          const shiftIdx = (i + Math.floor(state.liveWaveTick * 25)) % n;
+          sample = wf.filtered[shiftIdx] + 0.04 * Math.sin(state.liveWaveTick * 12.0 + i * 0.3);
+        }
+        const y = yMid - Math.max(-1.0, Math.min(1.0, sample)) * (plotH * 0.44);
+        if (i === 0) pipCtx.moveTo(x, y);
+        else pipCtx.lineTo(x, y);
+      }
+      pipCtx.stroke();
+
+      // P and S markers in PiP monitor
+      if (wf.morse_p_idx > 0) {
+        const px = padL + (wf.morse_p_idx / n) * plotW;
+        pipCtx.strokeStyle = "#00e5ff";
+        pipCtx.beginPath();
+        pipCtx.moveTo(px, padT);
+        pipCtx.lineTo(px, padT + plotH);
+        pipCtx.stroke();
+      }
+      if (wf.morse_s_idx > 0) {
+        const sx = padL + (wf.morse_s_idx / n) * plotW;
+        pipCtx.strokeStyle = "#ff3355";
+        pipCtx.beginPath();
+        pipCtx.moveTo(sx, padT);
+        pipCtx.lineTo(sx, padT + plotH);
+        pipCtx.stroke();
+      }
+    }
+
+    pipCtx.restore();
+  }
+
+  // ---------------------------------------------------------------------------
   // Helicorder Seismogram Multi-Station Canvas
   // ---------------------------------------------------------------------------
   const hCanvas = document.getElementById("helicorder-canvas");
@@ -1335,11 +2480,11 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
 
   function renderHelicorder() {
     const dpr = window.devicePixelRatio || 1;
-    const w = hCanvas.clientWidth;
-    const h = hCanvas.clientHeight;
-    if (hCanvas.width !== w * dpr || hCanvas.height !== h * dpr) {
-      hCanvas.width = w * dpr;
-      hCanvas.height = h * dpr;
+    const w = hCanvas.clientWidth || 800;
+    const h = hCanvas.clientHeight || 160;
+    if (hCanvas.width !== Math.floor(w * dpr) || hCanvas.height !== Math.floor(h * dpr)) {
+      hCanvas.width = Math.floor(w * dpr);
+      hCanvas.height = Math.floor(h * dpr);
     }
     hCtx.save();
     hCtx.scale(dpr, dpr);
@@ -1377,9 +2522,21 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       const wf = sta.waveform;
       if (!wf || !wf.times || wf.times.length === 0) return;
 
-      const duration = wf.times[wf.times.length - 1];
-      const timeRatio = Math.min(1.0, state.simTime / duration);
+      const duration = wf.times[wf.times.length - 1] || 60.0;
+      const timeRatio = state.liveMode ? 1.0 : Math.min(1.0, Math.max(0.22, state.simTime / duration));
       const curPts = Math.floor(timeRatio * wf.bhz.length);
+
+      // Full window dim background trace
+      hCtx.strokeStyle = "rgba(42, 62, 88, 0.42)";
+      hCtx.lineWidth = 1.0;
+      hCtx.beginPath();
+      for (let i = 0; i < wf.bhz.length; i++) {
+        const x = 180 + (i / wf.bhz.length) * (w - 190);
+        const y = yMid + wf.bhz[i] * (laneHeight * 0.35);
+        if (i === 0) hCtx.moveTo(x, y);
+        else hCtx.lineTo(x, y);
+      }
+      hCtx.stroke();
 
       // Raw Waveform Trace (Dim Gray)
       hCtx.strokeStyle = "#384d6b";
@@ -1399,7 +2556,12 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       hCtx.beginPath();
       for (let i = 0; i < curPts; i++) {
         const x = 180 + (i / wf.filtered.length) * (w - 190);
-        const y = yMid + wf.filtered[i] * (laneHeight * 0.35);
+        let sample = wf.filtered[i];
+        if (state.liveMode) {
+          const shiftIdx = (i + Math.floor(state.liveWaveTick * 20)) % wf.filtered.length;
+          sample = wf.filtered[shiftIdx];
+        }
+        const y = yMid + sample * (laneHeight * 0.35);
         if (i === 0) hCtx.moveTo(x, y);
         else hCtx.lineTo(x, y);
       }
@@ -1565,22 +2727,207 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
   }
 
   // ---------------------------------------------------------------------------
-  // Municipality Leaderboard & Telemetry DOM Updates
+  // Broadcast Telemetry Card, Live Event Feed & Municipality Leaderboard Updates
   // ---------------------------------------------------------------------------
+  function syncPipStationDropdown(scen) {
+    const sel = document.getElementById("pip-station-select");
+    if (!sel) return;
+    const stations = scen.stations || [];
+    sel.innerHTML = "";
+    stations.forEach((sta, idx) => {
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      opt.textContent = `${sta.net}.${sta.id} (${sta.dist_km.toFixed(0)}km)`;
+      sel.appendChild(opt);
+    });
+    if (state.selectedPipStationIdx >= stations.length) {
+      state.selectedPipStationIdx = 0;
+    }
+    sel.value = String(state.selectedPipStationIdx);
+  }
+
+  function buildScenarioEventsList() {
+    if (state.liveEvents && state.liveEvents.length > 0) {
+      return state.liveEvents;
+    }
+    const scens = window.QUAKESNAIL_OFFLINE_SCENARIOS || {};
+    const list = [];
+    Object.keys(scens).forEach((key) => {
+      if (key === "custom_imported") return;
+      const s = scens[key];
+      const qm = s.quality_metrics || {};
+      const hypo = s.hypocenter || { lat: 0, lon: 0, depth_km: 10, origin_time: "2026-10-24T12:00:00Z" };
+      const mag = s.magnitude ? s.magnitude.mw : 7.0;
+      const maxMmi = qm.max_mmi !== undefined ? qm.max_mmi : Math.max(2.0, mag * 1.15 - 1.0);
+      list.push({
+        id: s.id || key,
+        scenarioKey: key,
+        mag,
+        region: s.region || s.name || key,
+        depth_km: hypo.depth_km !== undefined ? hypo.depth_km : 10.0,
+        lat: hypo.lat || 0.0,
+        lon: hypo.lon || 0.0,
+        origin_time: (hypo.origin_time || "").replace("T", " ").replace("Z", " UTC"),
+        quality_grade: qm.grade || "A",
+        revision: qm.revision || 6,
+        max_mmi: maxMmi,
+        max_mmi_roman: qm.max_mmi_roman || qm.mmi_roman || mmiToRomanAndColor(maxMmi).roman,
+      });
+    });
+    return list;
+  }
+
+  function renderLiveEventsList() {
+    const container = document.getElementById("live-event-list-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const events = buildScenarioEventsList();
+    events.forEach((ev) => {
+      const numMmi = ev.max_mmi !== undefined ? ev.max_mmi : (ev.mmi !== undefined ? ev.mmi : Math.max(2.0, ev.mag * 1.15 - 1.0));
+      const mmiInfo = mmiToRomanAndColor(numMmi);
+      const roman = ev.max_mmi_roman || ev.mmi_roman || mmiInfo.roman;
+      const row = document.createElement("div");
+      const isSelected = (ev.scenarioKey && ev.scenarioKey === state.currentScenarioId) || (ev.id === state.currentScenarioId);
+      row.className = "live-quake-item live-event-item" + (isSelected ? " active active-event" : "");
+      const qGrade = ev.quality_grade || ev.quality || "B";
+      const timeStr = ev.origin_time || ev.time_utc || "2026-10-24 12:00:00 UTC";
+
+      row.innerHTML = `
+        <div class="quake-mmi-col event-mmi-box" style="background: ${mmiInfo.color};">
+          <span class="quake-mmi-roman roman">${roman}</span>
+          <span class="quake-depth-lbl depth-sub">${Number(ev.depth_km || 10.0).toFixed(1)}km</span>
+        </div>
+        <div class="quake-mid-col event-main-info">
+          <div class="quake-region-name event-region-title" title="${ev.region}">${ev.region}</div>
+          <div class="quake-time-utc event-meta-row">
+            <span>${timeStr}</span>
+          </div>
+        </div>
+        <div class="quake-right-col">
+          <span class="quality-badge q-${qGrade} quality-${qGrade}" style="font-size: 9px; padding: 0 4px;">${qGrade}</span>
+          <div class="quake-mag-lbl event-mag-pill">M${Number(ev.mag || 5.0).toFixed(1)}</div>
+        </div>
+      `;
+
+      row.addEventListener("click", () => {
+        if (ev.scenarioKey && window.QUAKESNAIL_OFFLINE_SCENARIOS && window.QUAKESNAIL_OFFLINE_SCENARIOS[ev.scenarioKey]) {
+          state.currentScenarioId = ev.scenarioKey;
+          const scenSelect = document.getElementById("scenario-select");
+          if (scenSelect) scenSelect.value = ev.scenarioKey;
+        } else if (ev.customScenario) {
+          window.QUAKESNAIL_OFFLINE_SCENARIOS = window.QUAKESNAIL_OFFLINE_SCENARIOS || {};
+          window.QUAKESNAIL_OFFLINE_SCENARIOS[ev.id] = ev.customScenario;
+          state.currentScenarioId = ev.id;
+        }
+        state.simTime = Math.min(state.simTime > 1.0 ? state.simTime : 8.5, 60.0);
+        const scen = getActiveScenario();
+        if (scen.hypocenter) {
+          state.camera.targetYaw = (scen.hypocenter.lon * Math.PI) / 180.0;
+          state.camera.targetPitch = ((scen.hypocenter.lat * Math.PI) / 180.0) * 0.8;
+          state.camera.targetDistance = 2.25;
+        }
+        syncPipStationDropdown(scen);
+        updateTelemetryAndLeaderboard();
+      });
+
+      container.appendChild(row);
+    });
+  }
+
   function updateTelemetryAndLeaderboard() {
     const scen = getActiveScenario();
 
-    // Hypocenter Card
+    // Hypocenter & Broadcast Detection Header
     const mag = scen.magnitude ? scen.magnitude.mw : 7.0;
+    const detectHeader = document.getElementById("card-detect-header");
+    if (detectHeader) {
+      detectHeader.textContent = `M${mag.toFixed(1)} Earthquake detected`;
+    }
+
     document.getElementById("card-mag").textContent = `M ${mag.toFixed(1)}`;
     document.getElementById("card-m-def").textContent = scen.magnitude ? scen.magnitude.m_default : mag;
     document.getElementById("card-m-low").textContent = scen.magnitude ? scen.magnitude.m_low : mag;
     document.getElementById("card-mw").textContent = mag.toFixed(1);
     document.getElementById("card-region").textContent = scen.region || "Global Seismic Zone";
 
-    const hypo = scen.hypocenter || { lat: 0, lon: 0, depth_km: 10 };
+    const hypo = scen.hypocenter || { lat: 0, lon: 0, depth_km: 10, origin_time: "2026-10-24T12:00:00Z" };
     document.getElementById("card-coords").textContent = `${hypo.lat.toFixed(3)}° N, ${hypo.lon.toFixed(3)}° E`;
     document.getElementById("card-depth").textContent = `${hypo.depth_km.toFixed(1)} km`;
+
+    const originUtcEl = document.getElementById("card-origin-utc");
+    if (originUtcEl) {
+      originUtcEl.textContent = (hypo.origin_time || "2026-10-24T12:00:00Z").replace("T", " ").replace("Z", " UTC");
+    }
+
+    // Quality Metrics & Broadcast Error Grid
+    const qm = scen.quality_metrics || {
+      grade: "A",
+      revision: 6,
+      stations_total: 64,
+      stations_used: 58,
+      stations_err: 0,
+      err_depth_km: scen.uncertainty_ellipsoid ? scen.uncertainty_ellipsoid.sigma_z_km : 2.5,
+      err_ns_km: scen.uncertainty_ellipsoid ? scen.uncertainty_ellipsoid.sigma_y_km : 1.5,
+      err_ew_km: scen.uncertainty_ellipsoid ? scen.uncertainty_ellipsoid.sigma_x_km : 1.8,
+      err_origin_s: 0.4,
+      pct_match: 96.4,
+      max_mmi: 7.5,
+    };
+
+    const mmiBox = document.getElementById("card-mmi-roman");
+    if (mmiBox) {
+      const mmiVal = qm.max_mmi !== undefined ? qm.max_mmi : 7.5;
+      const mmiInfo = mmiToRomanAndColor(mmiVal);
+      mmiBox.textContent = qm.max_mmi_roman || qm.mmi_roman || mmiInfo.roman;
+      if (mmiBox.parentElement) {
+        mmiBox.parentElement.style.background = mmiInfo.color;
+      } else {
+        mmiBox.style.background = mmiInfo.color;
+      }
+    }
+
+    const revEl = document.getElementById("card-revision");
+    if (revEl) revEl.textContent = String(qm.revision !== undefined ? qm.revision : 1);
+
+    const qGradeEl = document.getElementById("card-quality-grade");
+    if (qGradeEl) {
+      const g = qm.grade || "A";
+      qGradeEl.textContent = g;
+      qGradeEl.className = `quality-badge q-${g} quality-${g}`;
+    }
+
+    // Vertical Magnitude Scale Bar (1 to 9)
+    const magPct = Math.max(4, Math.min(100, ((mag - 1.0) / 8.0) * 100));
+    const magFill = document.getElementById("mag-scale-fill");
+    const magMarker = document.getElementById("mag-scale-marker");
+    if (magFill) magFill.style.height = `${magPct}%`;
+    if (magMarker) magMarker.style.bottom = `calc(${magPct}% - 2px)`;
+
+    // Station Counts & Directional Errors (preserve 0 station errors!)
+    const staTotEl = document.getElementById("card-sta-total");
+    const staUseEl = document.getElementById("card-sta-used");
+    const staErrEl = document.getElementById("card-sta-err");
+    const totCount = qm.stations_total !== undefined ? qm.stations_total : 48;
+    const usedCount = qm.stations_used !== undefined ? qm.stations_used : 42;
+    const errCount = qm.stations_err !== undefined ? qm.stations_err : 0;
+    if (staTotEl) staTotEl.textContent = String(totCount);
+    if (staUseEl) staUseEl.textContent = `${usedCount}/${totCount}`;
+    if (staErrEl) staErrEl.textContent = String(errCount);
+
+    const errDepthEl = document.getElementById("card-err-depth");
+    const errNsEl = document.getElementById("card-err-ns");
+    const errOrigEl = document.getElementById("card-err-origin");
+    const errEwEl = document.getElementById("card-err-ew");
+    const numStaEl = document.getElementById("card-num-stations");
+    const pctMatchEl = document.getElementById("card-pct-match");
+
+    if (errDepthEl) errDepthEl.textContent = `${Number(qm.err_depth_km !== undefined ? qm.err_depth_km : 2.1).toFixed(1)}km`;
+    if (errNsEl) errNsEl.textContent = `${Number(qm.err_ns_km !== undefined ? qm.err_ns_km : 1.4).toFixed(1)}km`;
+    if (errOrigEl) errOrigEl.textContent = `${Number(qm.err_origin_s !== undefined ? qm.err_origin_s : 0.4).toFixed(1)}s`;
+    if (errEwEl) errEwEl.textContent = `${Number(qm.err_ew_km !== undefined ? qm.err_ew_km : 1.6).toFixed(1)}km`;
+    if (numStaEl) numStaEl.textContent = String(usedCount);
+    if (pctMatchEl) pctMatchEl.textContent = `${Number(qm.pct_match !== undefined ? qm.pct_match : 95.0).toFixed(1)}%`;
 
     const depthPct = Math.min(100, (hypo.depth_km / 650.0) * 100);
     document.getElementById("card-depth-bar").style.width = `${Math.max(5, depthPct)}%`;
@@ -1602,6 +2949,9 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       document.getElementById("card-slab-strike").textContent = `${scen.wadati_benioff.slab_strike_deg.toFixed(1)}°`;
       document.getElementById("card-trench").textContent = scen.wadati_benioff.description || "Subduction Interface";
     }
+
+    // Render Live Events List
+    renderLiveEventsList();
 
     // Municipality List
     const container = document.getElementById("muni-list-container");
@@ -1677,21 +3027,569 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
   }
 
   // ---------------------------------------------------------------------------
+  // Option A & B: Pure-Browser Live Feed Client + In-Browser miniSEED Decoder
+  // ---------------------------------------------------------------------------
+  function signExtendBits(val, bits) {
+    const shift = 32 - bits;
+    return (val << shift) >> shift;
+  }
+
+  function decodeSingleMiniSeedRecord(arrayBuffer, baseOffset) {
+    const totalLen = arrayBuffer.byteLength;
+    let offset = baseOffset || 0;
+    const view = new DataView(arrayBuffer);
+
+    if (totalLen - offset >= 56 && view.getUint8(offset) === 83 && view.getUint8(offset + 1) === 76) {
+      offset += 8; // Strip 8-byte SeedLink 'SL' prefix
+    }
+    if (totalLen - offset < 48) return null;
+
+    const dec = new TextDecoder("ascii");
+    const bytes = new Uint8Array(arrayBuffer, offset);
+    const sta = dec.decode(bytes.subarray(8, 13)).trim();
+    const loc = dec.decode(bytes.subarray(13, 15)).trim();
+    const cha = dec.decode(bytes.subarray(15, 18)).trim();
+    const net = dec.decode(bytes.subarray(18, 20)).trim();
+
+    // Detect fixed-header byte order via year (1900..2100) and doy (1..366)
+    const yearBE = view.getUint16(offset + 20, false);
+    const doyBE = view.getUint16(offset + 22, false);
+    let littleEndian = !(yearBE >= 1900 && yearBE <= 2100 && doyBE >= 1 && doyBE <= 366);
+
+    const numSamples = view.getUint16(offset + 30, littleEndian);
+    const srFactor = view.getInt16(offset + 32, littleEndian);
+    const srMult = view.getInt16(offset + 34, littleEndian);
+    const dataOffset = view.getUint16(offset + 44, littleEndian) || 64;
+    const blocketteOffset = view.getUint16(offset + 46, littleEndian);
+
+    let sampleRate = 50.0;
+    if (srFactor > 0 && srMult > 0) sampleRate = srFactor * srMult;
+    else if (srFactor > 0 && srMult < 0) sampleRate = -srFactor / srMult;
+    else if (srFactor < 0 && srMult > 0) sampleRate = -srMult / srFactor;
+    else if (srFactor < 0 && srMult < 0) sampleRate = 1.0 / (srFactor * srMult);
+
+    let encoding = 10; // Default Steim-1
+    let recLen = 512;
+    if (blocketteOffset >= 48 && offset + blocketteOffset + 8 <= totalLen) {
+      let bType = view.getUint16(offset + blocketteOffset, littleEndian);
+      if (bType !== 1000 && view.getUint16(offset + blocketteOffset, !littleEndian) === 1000) {
+        bType = 1000;
+      }
+      if (bType === 1000) {
+        encoding = view.getUint8(offset + blocketteOffset + 4);
+        const wordOrder = view.getUint8(offset + blocketteOffset + 5);
+        littleEndian = (wordOrder === 0);
+        const recExp = view.getUint8(offset + blocketteOffset + 6);
+        if (recExp >= 6 && recExp <= 20) {
+          recLen = 1 << recExp;
+        }
+      }
+    }
+    const recordEnd = Math.min(totalLen, offset + recLen);
+    const payloadStart = offset + dataOffset;
+    const samples = [];
+
+    if (encoding === 1) {
+      for (let i = 0; i < numSamples && payloadStart + (i + 1) * 2 <= recordEnd; i++) {
+        samples.push(view.getInt16(payloadStart + i * 2, littleEndian));
+      }
+    } else if (encoding === 3) {
+      for (let i = 0; i < numSamples && payloadStart + (i + 1) * 4 <= recordEnd; i++) {
+        samples.push(view.getInt32(payloadStart + i * 4, littleEndian));
+      }
+    } else if (encoding === 4) {
+      for (let i = 0; i < numSamples && payloadStart + (i + 1) * 4 <= recordEnd; i++) {
+        samples.push(view.getFloat32(payloadStart + i * 4, littleEndian));
+      }
+    } else if (encoding === 5) {
+      for (let i = 0; i < numSamples && payloadStart + (i + 1) * 8 <= recordEnd; i++) {
+        samples.push(view.getFloat64(payloadStart + i * 8, littleEndian));
+      }
+    } else if (encoding === 10 || encoding === 11) {
+      // Steim-1 (10) & Steim-2 (11) 64-byte frames
+      let x0 = 0;
+      let cur = 0;
+      let firstSampleSet = false;
+      for (let fOff = payloadStart; fOff + 64 <= recordEnd && samples.length < numSamples; fOff += 64) {
+        const ctrl = view.getUint32(fOff, littleEndian);
+        for (let wIdx = 1; wIdx < 16 && samples.length < numSamples; wIdx++) {
+          const code = (ctrl >>> ((15 - wIdx) * 2)) & 0x03;
+          const wOff = fOff + wIdx * 4;
+          if (fOff === payloadStart && (wIdx === 1 || wIdx === 2)) {
+            if (wIdx === 1) { x0 = view.getInt32(wOff, littleEndian); cur = x0; }
+            continue;
+          }
+          const word = view.getUint32(wOff, littleEndian);
+          const diffs = [];
+          if (code === 1) {
+            for (let s = 24; s >= 0; s -= 8) diffs.push(signExtendBits((word >>> s) & 0xff, 8));
+          } else if (encoding === 10) {
+            if (code === 2) {
+              diffs.push(signExtendBits((word >>> 16) & 0xffff, 16), signExtendBits(word & 0xffff, 16));
+            } else if (code === 3) {
+              diffs.push(view.getInt32(wOff, littleEndian));
+            }
+          } else if (encoding === 11) {
+            const dnib = (word >>> 30) & 0x03;
+            if (code === 2) {
+              if (dnib === 1) {
+                diffs.push(signExtendBits(word & 0x3fffffff, 30));
+              } else if (dnib === 2) {
+                diffs.push(signExtendBits((word >>> 15) & 0x7fff, 15), signExtendBits(word & 0x7fff, 15));
+              } else if (dnib === 3) {
+                diffs.push(
+                  signExtendBits((word >>> 20) & 0x3ff, 10),
+                  signExtendBits((word >>> 10) & 0x3ff, 10),
+                  signExtendBits(word & 0x3ff, 10)
+                );
+              }
+            } else if (code === 3) {
+              if (dnib === 0) {
+                for (let s = 24; s >= 0; s -= 6) diffs.push(signExtendBits((word >>> s) & 0x3f, 6));
+              } else if (dnib === 1) {
+                for (let s = 25; s >= 0; s -= 5) diffs.push(signExtendBits((word >>> s) & 0x1f, 5));
+              } else if (dnib === 2) {
+                for (let s = 24; s >= 0; s -= 4) diffs.push(signExtendBits((word >>> s) & 0x0f, 4));
+              }
+            }
+          }
+          for (let dIdx = 0; dIdx < diffs.length && samples.length < numSamples; dIdx++) {
+            if (!firstSampleSet) {
+              samples.push(x0);
+              cur = x0;
+              firstSampleSet = true;
+            } else {
+              cur += diffs[dIdx];
+              samples.push(cur);
+            }
+          }
+        }
+      }
+    }
+    const consumed = Math.max(64, recordEnd - (baseOffset || 0));
+    return { net, sta, loc, cha, sampleRate, encoding, samples, nextOffset: (baseOffset || 0) + consumed };
+  }
+
+  function decodeMiniSeedBuffer(arrayBuffer) {
+    // Supports single or multi-record concatenated miniSEED v2.4 streams (Steim-1, Steim-2, Int16, Int32, Float32, Float64, BE/LE)
+    if (!arrayBuffer || arrayBuffer.byteLength < 48) return null;
+    let cursor = 0;
+    let merged = null;
+    while (cursor + 48 <= arrayBuffer.byteLength) {
+      const rec = decodeSingleMiniSeedRecord(arrayBuffer, cursor);
+      if (!rec || rec.nextOffset <= cursor) break;
+      if (!merged) {
+        merged = {
+          net: rec.net,
+          sta: rec.sta,
+          loc: rec.loc,
+          cha: rec.cha,
+          sampleRate: rec.sampleRate,
+          encoding: rec.encoding,
+          samples: rec.samples.slice(),
+          recordCount: 1,
+        };
+      } else {
+        for (let i = 0; i < rec.samples.length; i++) merged.samples.push(rec.samples[i]);
+        merged.recordCount += 1;
+      }
+      cursor = rec.nextOffset;
+    }
+    return merged;
+  }
+
+  function convertLiveEventToScenario(ev, liveWaveforms) {
+    const mag = Number(ev.mag) || 5.0;
+    const lat = Number(ev.lat) || 35.0;
+    const lon = Number(ev.lon) || 139.0;
+    const depth = Number(ev.depth_km) || 15.0;
+    const region = ev.region || "Global Seismic Zone";
+    const originTime = ev.origin_time || ev.time_utc || new Date().toISOString();
+    const maxMmi = ev.max_mmi !== undefined ? Number(ev.max_mmi) : (ev.mmi !== undefined ? Number(ev.mmi) : Math.min(10.0, Math.max(1.5, 1.45 * mag - 1.2 * Math.log10(Math.max(8.0, depth)) + 0.5)));
+    const mmiInfo = mmiToRomanAndColor(maxMmi);
+
+    // Synthesize 4 nearest monitoring stations with physics-grounded or live SeedLink waveforms
+    const stations = [];
+    const wfKeys = liveWaveforms ? Object.keys(liveWaveforms) : [];
+    for (let i = 0; i < 4; i++) {
+      const distKm = 25.0 + i * 45.0;
+      const hypDist = Math.hypot(distKm, depth);
+      const pgaG = Number(Math.min(1.5, Math.pow(10, 0.5 * mag - 1.4 * Math.log10(hypDist + 10.0) - 1.1)).toFixed(4));
+      const pArr = Number((hypDist / 6.2).toFixed(1));
+      const sArr = Number((hypDist / 3.5).toFixed(1));
+      const nPts = 300;
+      const times = [];
+      let bhz = [];
+      let filtered = [];
+      for (let k = 0; k < nPts; k++) {
+        const t = (k / nPts) * 60.0;
+        times.push(Number(t.toFixed(2)));
+        let env = 0.03 * Math.sin(k * 0.7);
+        if (t >= pArr) env += 0.25 * Math.exp(-(t - pArr) * 0.25) * Math.sin(t * 14.0);
+        if (t >= sArr) env += 0.85 * Math.exp(-(t - sArr) * 0.16) * Math.sin(t * 7.5);
+        bhz.push(Number(env.toFixed(4)));
+        filtered.push(Number((env * 0.92).toFixed(4)));
+      }
+      let staId = `ST0${i + 1}`;
+      let staNet = "LIVE";
+      if (wfKeys[i] && Array.isArray(liveWaveforms[wfKeys[i]]) && liveWaveforms[wfKeys[i]].length > 10) {
+        const rawArr = liveWaveforms[wfKeys[i]];
+        const parts = wfKeys[i].split(".");
+        if (parts.length >= 2) { staNet = parts[0]; staId = parts[1]; }
+        filtered = rawArr.slice(0, nPts);
+        while (filtered.length < nPts) filtered.push(0.0);
+        bhz = filtered.slice();
+      }
+      stations.push({
+        id: staId,
+        net: staNet,
+        name: `${region.split(",")[0]} Array ${i + 1}`,
+        dist_km: distKm,
+        pga_g: pgaG,
+        pga_gal: Number((pgaG * 980.665).toFixed(1)),
+        waveform: {
+          times,
+          bhz,
+          filtered,
+          sta_lta: times.map((t) => (t >= pArr && t <= sArr + 10 ? 6.5 : 1.0)),
+          p_arr_sec: pArr,
+          s_arr_sec: sArr,
+          morse_p_idx: Math.min(nPts - 1, Math.floor((pArr / 60.0) * nPts)),
+          morse_s_idx: Math.min(nPts - 1, Math.floor((sArr / 60.0) * nPts)),
+          glitch_idx: -1,
+        },
+      });
+    }
+
+    const qGrade = ev.quality_grade || ev.quality || "A";
+    const totSta = ev.stations_total !== undefined ? ev.stations_total : 48;
+    const usedSta = ev.stations_used !== undefined ? ev.stations_used : 41;
+    const errSta = ev.stations_err !== undefined ? ev.stations_err : 0;
+
+    return {
+      id: ev.id || `live_${Date.now()}`,
+      name: `M${mag.toFixed(1)} ${region}`,
+      region,
+      hypocenter: { lat, lon, depth_km: depth, origin_time: originTime },
+      magnitude: { mw: mag, m_default: mag, m_low: Number((mag - 0.1).toFixed(1)), m_ultralow: mag },
+      mechanism: { strike: 195, dip: 35, rake: 85 },
+      uncertainty_ellipsoid: { sigma_x_km: 1.8, sigma_y_km: 1.6, sigma_z_km: 2.8 },
+      quality_metrics: {
+        grade: qGrade,
+        revision: ev.revision || 3,
+        stations_total: totSta,
+        stations_used: usedSta,
+        stations_err: errSta,
+        err_depth_km: ev.err_depth_km !== undefined ? ev.err_depth_km : 2.8,
+        err_ns_km: ev.err_ns_km !== undefined ? ev.err_ns_km : 1.6,
+        err_ew_km: ev.err_ew_km !== undefined ? ev.err_ew_km : 1.8,
+        err_origin_s: ev.err_origin_s !== undefined ? ev.err_origin_s : 0.5,
+        pct_match: ev.pct_match !== undefined ? ev.pct_match : 94.8,
+        max_mmi: Number(maxMmi.toFixed(1)),
+        max_mmi_roman: ev.max_mmi_roman || ev.mmi_roman || mmiInfo.roman,
+      },
+      wadati_benioff: {
+        slab_dip_deg: 28.0,
+        slab_strike_deg: 195.0,
+        description: `${region} Seismogenic Zone`,
+        depth_profile: [[0, 8], [100, 35], [220, 85], [380, 190], [520, 340]],
+      },
+      municipalities: [
+        {
+          name: region.split(",")[0].trim() || "Epicentral Zone",
+          country_code: "LIVE",
+          lat: lat + 0.15,
+          lon: lon + 0.15,
+          distance_km: 22.0,
+          pga_g: stations[0].pga_g,
+          pgv_cms: Number((stations[0].pga_g * 85.0).toFixed(1)),
+          mmi: Number(maxMmi.toFixed(1)),
+          jma_shindo: maxMmi >= 7.0 ? "5+" : maxMmi >= 5.5 ? "4" : "3",
+          seconds_p: 4.2,
+          seconds_s: 7.5,
+        },
+      ],
+      stations,
+    };
+  }
+
+  function updateLiveStatusBadges(statusStr, countStr, isOnline) {
+    const statusText = document.getElementById("live-feed-text");
+    const headerStatus = document.getElementById("live-feed-status");
+    const countPill = document.getElementById("feed-count-badge") || document.getElementById("live-event-count-pill");
+    if (statusText && statusStr) statusText.textContent = statusStr;
+    if (headerStatus && statusStr) {
+      headerStatus.textContent = statusStr;
+      headerStatus.className = "badge-tag " + (isOnline ? "pass" : "warning");
+    }
+    if (countPill && countStr) countPill.textContent = countStr;
+  }
+
+  function autoFocusTopLiveEventIfNeeded() {
+    if (!state.autoDirector || !state.liveEvents || state.liveEvents.length === 0) return;
+    const topEv = state.liveEvents[0];
+    if (topEv && topEv.customScenario && state.lastAutoFocusedEventId !== topEv.id) {
+      state.lastAutoFocusedEventId = topEv.id;
+      window.QUAKESNAIL_OFFLINE_SCENARIOS = window.QUAKESNAIL_OFFLINE_SCENARIOS || {};
+      window.QUAKESNAIL_OFFLINE_SCENARIOS[topEv.id] = topEv.customScenario;
+      state.currentScenarioId = topEv.id;
+      const hypo = topEv.customScenario.hypocenter;
+      if (hypo) {
+        state.camera.targetYaw = (hypo.lon * Math.PI) / 180.0;
+        state.camera.targetPitch = ((hypo.lat * Math.PI) / 180.0) * 0.8;
+        state.camera.targetDistance = 2.25;
+      }
+      syncPipStationDropdown(topEv.customScenario);
+      updateTelemetryAndLeaderboard();
+    }
+  }
+
+  async function pollPublicSeismicFeeds() {
+    if (!state.liveMode) return;
+
+    // 1. Try local Python Studio Live Server bridge first (http://127.0.0.1:8080/api/state)
+    try {
+      const localResp = await fetch("http://127.0.0.1:8080/api/state", { cache: "no-store" });
+      if (localResp.ok) {
+        const snap = await localResp.json();
+        if (snap.stations && snap.stations.length > 0) state.liveStations = snap.stations;
+        if (snap.events && snap.events.length > 0) {
+          state.liveEvents = snap.events.map((ev) => {
+            const customScenario = convertLiveEventToScenario(ev, snap.waveforms);
+            return Object.assign({}, ev, { customScenario });
+          });
+          updateLiveStatusBadges("SEEDLINK BRIDGE", `${state.liveEvents.length} LIVE`, true);
+          autoFocusTopLiveEventIfNeeded();
+          renderLiveEventsList();
+          return;
+        }
+      }
+    } catch (_) {
+      // Local server not running; proceed with direct Pure-Browser feeds (Option A)
+    }
+
+    // 2. Direct Browser Fetch: USGS Real-Time GeoJSON Feed (CORS enabled: Access-Control-Allow-Origin: *)
+    try {
+      const usgsResp = await fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson");
+      if (usgsResp.ok) {
+        const geo = await usgsResp.json();
+        const features = (geo && geo.features) ? geo.features.slice(0, 15) : [];
+        if (features.length > 0) {
+          state.liveEvents = features.map((feat, idx) => {
+            const props = feat.properties || {};
+            const coords = (feat.geometry && feat.geometry.coordinates) || [139.0, 35.0, 10.0];
+            const mag = Number(props.mag) || 3.0;
+            const depth_km = Number(coords[2]) || 10.0;
+            const tMs = Number(props.time) || Date.now();
+            const dtIso = new Date(tMs).toISOString().replace("T", " ").slice(0, 19) + " UTC";
+            const evObj = {
+              id: String(feat.id || `usgs_${idx}`),
+              mag,
+              region: String(props.place || "Global Seismic Zone"),
+              lat: Number(coords[1]) || 0.0,
+              lon: Number(coords[0]) || 0.0,
+              depth_km,
+              origin_time: dtIso,
+              quality_grade: (props.gap && props.gap < 90) ? "A" : "B",
+              revision: Number(props.nst) || 4,
+              max_mmi: Number(props.mmi) || Math.max(2.0, mag * 1.15 - 0.8),
+            };
+            evObj.customScenario = convertLiveEventToScenario(evObj);
+            return evObj;
+          });
+          updateLiveStatusBadges("LIVE (USGS/EMSC)", `${state.liveEvents.length} LIVE`, true);
+          autoFocusTopLiveEventIfNeeded();
+          renderLiveEventsList();
+        }
+      }
+    } catch (_) {
+      // Fallback to GeoNet NZ Rapid Quake API if USGS is unreachable
+      try {
+        const geonetResp = await fetch("https://api.geonet.org.nz/quake?MMI=-1");
+        if (geonetResp.ok) {
+          const gn = await geonetResp.json();
+          const feats = (gn && gn.features) ? gn.features.slice(0, 12) : [];
+          if (feats.length > 0) {
+            state.liveEvents = feats.map((f, idx) => {
+              const p = f.properties || {};
+              const c = (f.geometry && f.geometry.coordinates) || [174.7, -41.2, 15.0];
+              const evObj = {
+                id: String(p.publicID || `gn_${idx}`),
+                mag: Number(p.magnitude) || 3.5,
+                region: String(p.locality || "New Zealand"),
+                lat: Number(c[1]),
+                lon: Number(c[0]),
+                depth_km: Number(p.depth) || 15.0,
+                origin_time: String(p.time || "").replace("T", " ").slice(0, 19) + " UTC",
+                quality_grade: p.quality === "best" ? "A" : "B",
+                revision: 3,
+                max_mmi: Number(p.mmi) || 4.0,
+              };
+              evObj.customScenario = convertLiveEventToScenario(evObj);
+              return evObj;
+            });
+            updateLiveStatusBadges("LIVE (GEONET)", `${state.liveEvents.length} LIVE`, true);
+            autoFocusTopLiveEventIfNeeded();
+            renderLiveEventsList();
+          }
+        }
+      } catch (__) {
+        updateLiveStatusBadges("LIVE SIM STREAM", "5 SCENARIOS", true);
+      }
+    }
+
+    // 3. Direct Browser Fetch: EarthScope FDSN StationWS Metadata (CORS enabled)
+    if (state.liveStations.length === 0) {
+      try {
+        const fdsnUrl = "https://service.earthscope.org/fdsnws/station/1/query?net=IU,II&sta=MAJO,INU,ERM,TATO,KIP,ANMO,COR,PFO&cha=BHZ&level=station&format=text";
+        const stResp = await fetch(fdsnUrl);
+        if (stResp.ok) {
+          const txt = await stResp.text();
+          const parsed = [];
+          txt.split("\n").forEach((line) => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith("#")) return;
+            const parts = trimmed.split("|");
+            if (parts.length >= 6) {
+              parsed.push({
+                net: parts[0].trim(),
+                sta: parts[1].trim(),
+                lat: parseFloat(parts[2]) || 0.0,
+                lon: parseFloat(parts[3]) || 0.0,
+                site_name: parts[5].trim(),
+              });
+            }
+          });
+          if (parsed.length > 0) state.liveStations = parsed;
+        }
+      } catch (_) {}
+    }
+  }
+
+  function toggleLiveMode() {
+    state.liveMode = !state.liveMode;
+    const btn = document.getElementById("btn-live-stream");
+    const dot = document.getElementById("live-feed-dot");
+
+    if (btn) btn.classList.toggle("active", state.liveMode);
+
+    if (state.liveMode) {
+      if (dot) dot.style.color = "#00e676";
+      updateLiveStatusBadges("CONNECTING...", "CONNECTING", true);
+      pollPublicSeismicFeeds();
+      state.livePollInterval = setInterval(pollPublicSeismicFeeds, 30000);
+
+      // Connect to EMSC / SeismicPortal Real-Time WebSocket
+      try {
+        const ws = new WebSocket("wss://www.seismicportal.eu/standing_order/websocket");
+        state.liveWs = ws;
+        ws.onopen = () => {
+          if (state.liveMode) updateLiveStatusBadges("LIVE (WS+USGS)", `${Math.max(5, state.liveEvents.length)} LIVE`, true);
+        };
+        ws.onmessage = (msg) => {
+          try {
+            const payload = JSON.parse(msg.data);
+            const d = (payload && payload.data && payload.data.properties) ? payload.data.properties : null;
+            if (d) {
+              const evObj = {
+                id: String(payload.data.id || `emsc_${Date.now()}`),
+                mag: Number(d.mag) || 4.0,
+                region: String(d.flynn_region || "EMSC Real-Time Detection"),
+                lat: Number(d.lat) || 0.0,
+                lon: Number(d.lon) || 0.0,
+                depth_km: Number(d.depth) || 10.0,
+                origin_time: String(d.time || "").replace("T", " ").slice(0, 19) + " UTC",
+                quality_grade: "A",
+                revision: 1,
+                max_mmi: Math.max(2.5, (Number(d.mag) || 4.0) * 1.15 - 0.5),
+              };
+              evObj.customScenario = convertLiveEventToScenario(evObj);
+              state.liveEvents.unshift(evObj);
+              if (state.liveEvents.length > 20) state.liveEvents.pop();
+              updateLiveStatusBadges("LIVE (EMSC WS)", `${state.liveEvents.length} LIVE`, true);
+              autoFocusTopLiveEventIfNeeded();
+              renderLiveEventsList();
+            }
+          } catch (_) {}
+        };
+      } catch (_) {}
+    } else {
+      if (dot) dot.style.color = "#7f92ab";
+      updateLiveStatusBadges("OFFLINE SIM", "LIVE CATALOG", false);
+      const txt = document.getElementById("live-feed-text");
+      if (txt) txt.textContent = "LIVE FEED";
+      if (state.livePollInterval) {
+        clearInterval(state.livePollInterval);
+        state.livePollInterval = null;
+      }
+      if (state.liveWs) {
+        try { state.liveWs.close(); } catch (_) {}
+        state.liveWs = null;
+      }
+      state.liveEvents = [];
+      renderLiveEventsList();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Main Animation & Render Loop
   // ---------------------------------------------------------------------------
   let lastTimestamp = performance.now();
+  let lastUtcClockSec = -1;
 
   function animate(now) {
-    const dt = (now - lastTimestamp) * 0.001;
+    const dt = Math.min(0.1, Math.max(0.001, (now - lastTimestamp) * 0.001));
     lastTimestamp = now;
+
+    if (state.liveMode) {
+      state.liveWaveTick += dt;
+    }
+
+    // Update top-right UTC live broadcast clock once per second
+    const nowEpochSec = Math.floor(Date.now() * 0.001);
+    if (nowEpochSec !== lastUtcClockSec) {
+      lastUtcClockSec = nowEpochSec;
+      const utcEl = document.getElementById("utc-live-clock");
+      if (utcEl) {
+        const d = new Date();
+        const dd = String(d.getUTCDate()).padStart(2, "0");
+        const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const yyyy = d.getUTCFullYear();
+        const hh = String(d.getUTCHours()).padStart(2, "0");
+        const mm = String(d.getUTCMinutes()).padStart(2, "0");
+        const ss = String(d.getUTCSeconds()).padStart(2, "0");
+        utcEl.textContent = `${dd}/${mo}/${yyyy} ${hh}:${mm}:${ss} UTC`;
+      }
+    }
 
     // Advance simulation time if playing
     if (state.isPlaying) {
       state.simTime += dt * state.speedMultiplier;
-      if (state.simTime > 60.0) state.simTime = 60.0;
-      document.getElementById("timeline-scrub").value = state.simTime;
-      document.getElementById("clock-display").textContent = `T+ ${state.simTime.toFixed(1)}s`;
+      if (state.simTime > 60.0) state.simTime = 0.0;
+      const scrub = document.getElementById("timeline-scrub");
+      if (scrub) scrub.value = state.simTime;
+      const clk = document.getElementById("clock-display");
+      if (clk) clk.textContent = `T+ ${state.simTime.toFixed(1)}s`;
       updateTelemetryAndLeaderboard();
+    }
+
+    // Automatic Camera Director gentle orbital drift around active epicenter + station cycling
+    if (state.autoDirector && !state.camera.isDragging && !state.autoRotate) {
+      const prevBucket = Math.floor(state.directorTimer / 12.0);
+      state.directorTimer += dt;
+      const curBucket = Math.floor(state.directorTimer / 12.0);
+      const scen = getActiveScenario();
+      if (scen && scen.hypocenter) {
+        const baseYaw = (scen.hypocenter.lon * Math.PI) / 180.0;
+        const basePitch = ((scen.hypocenter.lat * Math.PI) / 180.0) * 0.8;
+        state.camera.targetYaw = baseYaw + Math.sin(state.directorTimer * 0.22) * 0.08;
+        state.camera.targetPitch = Math.max(-1.3, Math.min(1.3, basePitch + Math.cos(state.directorTimer * 0.17) * 0.04));
+      }
+      if (curBucket > prevBucket && scen && scen.stations && scen.stations.length > 1) {
+        state.selectedPipStationIdx = (state.selectedPipStationIdx + 1) % scen.stations.length;
+        const pipSel = document.getElementById("pip-station-select");
+        if (pipSel) pipSel.value = String(state.selectedPipStationIdx);
+      }
     }
 
     // Camera inertia easing
@@ -1703,24 +3601,12 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       state.camera.targetYaw += 0.003;
     }
 
-    // Resize viewport canvas
+    // Resize viewport canvas safely (with fallback dimensions for headless/zero-layout states)
     const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    }
+    const w = Math.max(300, canvas.clientWidth || 800);
+    const h = Math.max(200, canvas.clientHeight || 500);
 
-    gl.clearColor(0.015, 0.025, 0.04, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
-
-    gl.useProgram(prog);
-
-    // Compute Camera Matrices
+    // Compute Camera Matrices (Column-Major OpenGL convention)
     const eye = [
       state.camera.distance * Math.cos(state.camera.pitch) * Math.sin(state.camera.yaw),
       state.camera.distance * Math.sin(state.camera.pitch),
@@ -1743,25 +3629,41 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     mat4Multiply(vp, proj, view);
     mat4Multiply(mvp, vp, model);
 
-    gl.uniformMatrix4fv(uMvpLoc, false, mvp);
-    gl.uniformMatrix4fv(uModelLoc, false, model);
-
-    // Set Hypocenter and Wavefront Radii Uniforms
     const scen = getActiveScenario();
     const hypoLat = scen.hypocenter ? scen.hypocenter.lat : 38.32;
     const hypoLon = scen.hypocenter ? scen.hypocenter.lon : 142.36;
     const hypoVec = latLonToVec3(hypoLat, hypoLon);
 
-    gl.uniform3f(uHypoLoc, hypoVec[0], hypoVec[1], hypoVec[2]);
-    gl.uniform1f(uRadPLoc, state.simTime * 7.8);
-    gl.uniform1f(uRadSLoc, state.simTime * 4.4);
-    gl.uniform1f(uSimTimeLoc, state.simTime);
-    gl.uniform3f(uCamPosLoc, eye[0], eye[1], eye[2]);
+    if (glReady && gl) {
+      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
 
-    gl.bindVertexArray(vao);
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+      gl.clearColor(0.015, 0.025, 0.04, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.DEPTH_TEST);
+      gl.enable(gl.CULL_FACE);
 
-    // Render 2D Helicorder waveforms
+      gl.useProgram(prog);
+      gl.uniformMatrix4fv(uMvpLoc, false, mvp);
+      gl.uniformMatrix4fv(uModelLoc, false, model);
+      gl.uniform3f(uHypoLoc, hypoVec[0], hypoVec[1], hypoVec[2]);
+      gl.uniform1f(uRadPLoc, state.simTime * 7.8);
+      gl.uniform1f(uRadSLoc, state.simTime * 4.4);
+      gl.uniform1f(uSimTimeLoc, state.simTime);
+      gl.uniform3f(uCamPosLoc, eye[0], eye[1], eye[2]);
+
+      gl.bindVertexArray(vao);
+      gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    }
+
+    // Render 3D Vector Overlay (Fault Lines, Station Triangles, Wavefront Circles, Epicenter Callout)
+    renderGlobeOverlay(w, h, eye, mvp, scen);
+
+    // Render Bottom-Left PiP Station Oscilloscope & Bottom Multi-Station Helicorder
+    renderPipMonitor();
     renderHelicorder();
 
     requestAnimationFrame(animate);
@@ -1810,11 +3712,30 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     document.getElementById("alarm-state").textContent = state.alarmEnabled ? "ON" : "OFF";
   });
 
+  const liveStreamBtn = document.getElementById("btn-live-stream");
+  if (liveStreamBtn) {
+    liveStreamBtn.addEventListener("click", toggleLiveMode);
+  }
+
+  const pipSelectEl = document.getElementById("pip-station-select");
+  if (pipSelectEl) {
+    pipSelectEl.addEventListener("change", (e) => {
+      state.selectedPipStationIdx = parseInt(e.target.value, 10) || 0;
+      renderPipMonitor();
+    });
+  }
+
   document.getElementById("scenario-select").addEventListener("change", (e) => {
-    state.currentScenarioId = e.target.value;
-    state.simTime = 0.0;
-    document.getElementById("timeline-scrub").value = 0;
-    document.getElementById("clock-display").textContent = "T+ 00.0s";
+    const val = e.target.value;
+    if (val === "live_global_stream") {
+      if (!state.liveMode) toggleLiveMode();
+      return;
+    }
+    state.currentScenarioId = val;
+    state.simTime = 8.5;
+    document.getElementById("timeline-scrub").value = state.simTime;
+    document.getElementById("clock-display").textContent = `T+ ${state.simTime.toFixed(1)}s`;
+    state.selectedPipStationIdx = 0;
 
     // Focus camera on new epicenter
     const scen = getActiveScenario();
@@ -1823,8 +3744,9 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
       const lonRad = (scen.hypocenter.lon * Math.PI) / 180.0;
       state.camera.targetYaw = lonRad;
       state.camera.targetPitch = latRad * 0.8;
-      state.camera.targetDistance = 2.4;
+      state.camera.targetDistance = 2.35;
     }
+    syncPipStationDropdown(scen);
     updateTelemetryAndLeaderboard();
   });
 
@@ -1833,18 +3755,21 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     updateTelemetryAndLeaderboard();
   });
 
+  const camPresetHud = document.getElementById("hud-cam-preset");
   document.getElementById("btn-cam-focus").addEventListener("click", () => {
     const scen = getActiveScenario();
     if (scen.hypocenter) {
       state.camera.targetYaw = (scen.hypocenter.lon * Math.PI) / 180.0;
-      state.camera.targetPitch = (scen.hypocenter.lat * Math.PI) / 180.0 * 0.8;
+      state.camera.targetPitch = ((scen.hypocenter.lat * Math.PI) / 180.0) * 0.8;
       state.camera.targetDistance = 2.0;
+      if (camPresetHud) camPresetHud.textContent = "HYPOCENTER FOCUS";
     }
   });
 
   document.getElementById("btn-cam-north").addEventListener("click", () => {
     state.camera.targetPitch = 0.35;
     state.camera.targetDistance = 2.8;
+    if (camPresetHud) camPresetHud.textContent = "NORTH UP ORBIT";
   });
 
   document.getElementById("btn-cam-slab").addEventListener("click", () => {
@@ -1852,13 +3777,24 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     if (scen.wadati_benioff) {
       state.camera.targetPitch = 0.15;
       state.camera.targetDistance = 2.1;
+      if (camPresetHud) camPresetHud.textContent = "SLAB INTERFACE";
     }
   });
 
   document.getElementById("btn-cam-autorotate").addEventListener("click", () => {
     state.autoRotate = !state.autoRotate;
     document.getElementById("btn-cam-autorotate").classList.toggle("active", state.autoRotate);
+    if (camPresetHud) camPresetHud.textContent = state.autoRotate ? "TURNTABLE" : "EPICENTER ORBIT";
   });
+
+  const camDirectorBtn = document.getElementById("btn-cam-director");
+  if (camDirectorBtn) {
+    camDirectorBtn.addEventListener("click", () => {
+      state.autoDirector = !state.autoDirector;
+      camDirectorBtn.classList.toggle("active", state.autoDirector);
+      if (camPresetHud) camPresetHud.textContent = state.autoDirector ? "AUTO DIRECTOR" : "MANUAL ORBIT";
+    });
+  }
 
   // Wadati-Benioff 2D Cutaway Modal
   const modal = document.getElementById("cutaway-modal");
@@ -1875,7 +3811,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     if (e.target === modal) modal.classList.remove("active");
   });
 
-  // Drag & Drop Handling
+  // Drag & Drop Handling (GeoJSON, QuakeML, or binary miniSEED .mseed)
   const dropzone = document.getElementById("dropzone");
   window.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -1891,6 +3827,27 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     dropzone.classList.remove("active");
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
+      if (file.name.endsWith(".mseed") || file.name.endsWith(".msd")) {
+        const bufReader = new FileReader();
+        bufReader.onload = (ev) => {
+          const rec = decodeMiniSeedBuffer(ev.target.result);
+          if (rec && rec.samples && rec.samples.length > 0) {
+            const scen = getActiveScenario();
+            if (scen.stations && scen.stations.length > 0) {
+              const maxAbs = Math.max(1, ...rec.samples.map((x) => Math.abs(x)));
+              const norm = rec.samples.map((x) => x / maxAbs);
+              scen.stations[0].id = rec.sta || "MSEED";
+              scen.stations[0].net = rec.net || "XX";
+              scen.stations[0].waveform.bhz = norm;
+              scen.stations[0].waveform.filtered = norm;
+              updateTelemetryAndLeaderboard();
+            }
+          }
+        };
+        bufReader.readAsArrayBuffer(file);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
@@ -1903,6 +3860,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
             window.QUAKESNAIL_OFFLINE_SCENARIOS = window.QUAKESNAIL_OFFLINE_SCENARIOS || {};
             window.QUAKESNAIL_OFFLINE_SCENARIOS["custom_imported"] = customData;
             state.currentScenarioId = "custom_imported";
+            syncPipStationDropdown(customData);
             updateTelemetryAndLeaderboard();
           }
         } catch (err) {
@@ -1913,13 +3871,33 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     }
   });
 
-  // Initial setup
-  // Focus initial camera position on Tohoku
-  state.camera.yaw = (142.36 * Math.PI) / 180.0;
-  state.camera.pitch = (38.32 * Math.PI) / 180.0 * 0.8;
-  state.camera.targetYaw = state.camera.yaw;
-  state.camera.targetPitch = state.camera.pitch;
+  // Initial setup: Sync Firefox form-control restoration state before first render
+  const initScenSelect = document.getElementById("scenario-select");
+  if (initScenSelect && initScenSelect.value) {
+    state.currentScenarioId = initScenSelect.value;
+  }
+  const initHomeSelect = document.getElementById("home-select");
+  if (initHomeSelect && initHomeSelect.value) {
+    state.homeCity = initHomeSelect.value;
+  }
+  const initScrub = document.getElementById("timeline-scrub");
+  if (initScrub) {
+    initScrub.value = state.simTime;
+  }
+  const initClock = document.getElementById("clock-display");
+  if (initClock) {
+    initClock.textContent = `T+ ${state.simTime.toFixed(1)}s`;
+  }
 
+  const initialScen = getActiveScenario();
+  if (initialScen && initialScen.hypocenter) {
+    state.camera.yaw = (initialScen.hypocenter.lon * Math.PI) / 180.0;
+    state.camera.pitch = ((initialScen.hypocenter.lat * Math.PI) / 180.0) * 0.8;
+    state.camera.targetYaw = state.camera.yaw;
+    state.camera.targetPitch = state.camera.pitch;
+  }
+
+  syncPipStationDropdown(initialScen);
   updateTelemetryAndLeaderboard();
   requestAnimationFrame(animate);
 

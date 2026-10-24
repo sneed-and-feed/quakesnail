@@ -466,6 +466,37 @@ def get_offline_scenarios() -> Dict[str, Any]:
         "stations": scen5_stations,
     }
 
+    scenario_1["quality_metrics"] = {
+        "grade": "A", "revision": 5, "mmi_roman": "IX", "max_mmi_roman": "IX", "max_mmi": 9.2,
+        "stations_total": 8, "stations_used": 8, "stations_err": 0,
+        "err_depth_km": 2.4, "err_ns_km": 0.8, "err_ew_km": 1.1, "err_origin_s": 0.2,
+        "pct_match": 100.0,
+    }
+    scenario_2["quality_metrics"] = {
+        "grade": "A", "revision": 4, "mmi_roman": "VIII", "max_mmi_roman": "VIII", "max_mmi": 8.1,
+        "stations_total": 8, "stations_used": 8, "stations_err": 0,
+        "err_depth_km": 0.9, "err_ns_km": 0.4, "err_ew_km": 0.5, "err_origin_s": 0.1,
+        "pct_match": 99.8,
+    }
+    scenario_3["quality_metrics"] = {
+        "grade": "B", "revision": 3, "mmi_roman": "VI", "max_mmi_roman": "VI", "max_mmi": 5.9,
+        "stations_total": 6, "stations_used": 6, "stations_err": 0,
+        "err_depth_km": 3.8, "err_ns_km": 1.2, "err_ew_km": 1.4, "err_origin_s": 0.4,
+        "pct_match": 99.1,
+    }
+    scenario_4["quality_metrics"] = {
+        "grade": "B", "revision": 4, "mmi_roman": "IV", "max_mmi_roman": "IV", "max_mmi": 4.1,
+        "stations_total": 5, "stations_used": 5, "stations_err": 0,
+        "err_depth_km": 4.5, "err_ns_km": 2.1, "err_ew_km": 2.4, "err_origin_s": 0.6,
+        "pct_match": 97.5,
+    }
+    scenario_5["quality_metrics"] = {
+        "grade": "A", "revision": 6, "mmi_roman": "VI", "max_mmi_roman": "VI", "max_mmi": 5.9,
+        "stations_total": 6, "stations_used": 6, "stations_err": 0,
+        "err_depth_km": 0.4, "err_ns_km": 0.2, "err_ew_km": 0.2, "err_origin_s": 0.1,
+        "pct_match": 100.0,
+    }
+
     return {
         "scenario_subduction_megathrust": scenario_1,
         "scenario_shallow_strike_slip": scenario_2,
@@ -537,4 +568,69 @@ def export_portable_studio(
     content = generate_studio_html(scenarios=scenarios)
     out_path.write_text(content, encoding="utf-8")
     return content
+
+
+def create_studio_http_server(host: str = "127.0.0.1", port: int = 8080):
+    """Create a ThreadingHTTPServer serving the QuakeSnail Studio HTML and live SeedLink/FDSN JSON API."""
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    import numpy as np
+    from quakesnail.core.streaming import (
+        FDSNStationClient,
+        GLOBAL_BUILTIN_STATIONS,
+        LiveEventFeedClient,
+        StreamingClient,
+        WaveformPacket,
+        build_live_state_snapshot,
+    )
+
+    live_client = StreamingClient(offline_mode=False)
+    for idx, st in enumerate(GLOBAL_BUILTIN_STATIONS[:6]):
+        code = f"{st['net']}.{st['sta']}"
+        live_client.register_station(code, float(st["lat"]), float(st["lon"]), float(st["elev_m"]))
+        t_arr = np.linspace(0.0, 5.0, 250, dtype=np.float32)
+        wave = 0.02 * np.sin(2.0 * np.pi * 2.0 * t_arr)
+        wave[40 + idx * 10 : 90 + idx * 10] += 12.0 * np.sin(2.0 * np.pi * 3.5 * t_arr[:50])
+        live_client.process_packet(
+            WaveformPacket(station_code=code, timestamp_s=0.0, samples=wave, sample_rate_hz=50.0)
+        )
+
+    html_cache = generate_studio_html()
+
+    class StudioRequestHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def _send_json(self, payload: Any, status: int = 200) -> None:
+            raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(raw)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def do_GET(self) -> None:
+            path = self.path.split("?")[0]
+            if path in ("/", "/index.html", "/studio"):
+                raw = html_cache.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(raw)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(raw)
+            elif path == "/api/state":
+                self._send_json(build_live_state_snapshot(live_client))
+            elif path == "/api/events":
+                self._send_json({"events": LiveEventFeedClient.fetch_recent_events(timeout_s=2.0)})
+            elif path == "/api/stations":
+                self._send_json({"stations": FDSNStationClient.fetch_stations(timeout_s=2.0)})
+            elif path == "/api/waveforms":
+                snap = build_live_state_snapshot(live_client)
+                self._send_json({"waveforms": snap.get("waveforms", {})})
+            else:
+                self._send_json({"error": "Not found"}, status=404)
+
+    return ThreadingHTTPServer((host, int(port)), StudioRequestHandler)
+
 

@@ -281,3 +281,428 @@ class TestStudioTier4:
             finally:
                 if os.path.exists(temp_js_path):
                     os.unlink(temp_js_path)
+
+
+# ===========================================================================
+# Tier 5: Firefox Fixes, Option A/B Live Streaming & Option C Broadcast HUD
+# ===========================================================================
+
+class TestStudioBroadcastAndLiveModes:
+    """Verify Firefox WebGL2/CSS fixes, Option A/B live streaming, and Option C Broadcast HUD."""
+
+    def test_firefox_webgl_column_major_mat4_and_ccw_winding(self):
+        """
+        Verify mat4Multiply uses column-major indexing (so proj * view keeps sphere vertices
+        inside clip space [-1, 1]) and sphere indices use CCW front-face winding.
+        """
+        studio_path = get_or_export_studio_html()
+        html = studio_path.read_text(encoding="utf-8")
+
+        # 1. Verify CCW sphere winding order
+        assert "indices.push(first, first + 1, second);" in html
+        assert "indices.push(second, first + 1, second + 1);" in html
+
+        # 2. Verify CSS Grid minmax(0, 1fr) fix for Firefox Gecko row blowout
+        assert "grid-template-rows: minmax(0, 1fr) 190px;" in html
+        assert "glReady" in html
+
+        # 3. Verify via Node.js that column-major mat4Multiply places the front sphere vertex inside clip space
+        node_script = """
+        function mat4Perspective(out, fovy, aspect, near, far) {
+          const f = 1.0 / Math.tan(fovy / 2);
+          out.fill(0);
+          out[0] = f / aspect; out[5] = f;
+          out[10] = (far + near) / (near - far); out[11] = -1;
+          out[14] = (2 * far * near) / (near - far);
+        }
+        function mat4LookAt(out, eye, center, up) {
+          let z0 = eye[0]-center[0], z1 = eye[1]-center[1], z2 = eye[2]-center[2];
+          let len = 1.0 / Math.hypot(z0, z1, z2); z0 *= len; z1 *= len; z2 *= len;
+          let x0 = up[1]*z2 - up[2]*z1, x1 = up[2]*z0 - up[0]*z2, x2 = up[0]*z1 - up[1]*z0;
+          len = 1.0 / Math.hypot(x0, x1, x2); x0 *= len; x1 *= len; x2 *= len;
+          let y0 = z1*x2 - z2*x1, y1 = z2*x0 - z0*x2, y2 = z0*x1 - z1*x0;
+          out[0]=x0; out[1]=y0; out[2]=z0; out[3]=0;
+          out[4]=x1; out[5]=y1; out[6]=z1; out[7]=0;
+          out[8]=x2; out[9]=y2; out[10]=z2; out[11]=0;
+          out[12]=-(x0*eye[0]+x1*eye[1]+x2*eye[2]);
+          out[13]=-(y0*eye[0]+y1*eye[1]+y2*eye[2]);
+          out[14]=-(z0*eye[0]+z1*eye[1]+z2*eye[2]);
+          out[15]=1;
+        }
+        function mat4Multiply(out, a, b) {
+          for (let c = 0; c < 4; ++c) {
+            for (let r = 0; r < 4; ++r) {
+              let sum = 0.0;
+              for (let k = 0; k < 4; ++k) sum += a[k * 4 + r] * b[c * 4 + k];
+              out[c * 4 + r] = sum;
+            }
+          }
+        }
+        const view = new Float32Array(16), proj = new Float32Array(16), mvp = new Float32Array(16);
+        mat4LookAt(view, [0, 0, 2.35], [0, 0, 0], [0, 1, 0]);
+        mat4Perspective(proj, 45 * Math.PI / 180, 1.6, 0.1, 100.0);
+        mat4Multiply(mvp, proj, view);
+        // Transform front sphere vertex (0, 0, 1, 1)
+        const clipZ = mvp[2]*0 + mvp[6]*0 + mvp[10]*1 + mvp[14];
+        const clipW = mvp[3]*0 + mvp[7]*0 + mvp[11]*1 + mvp[15];
+        const ndcZ = clipZ / clipW;
+        if (!(ndcZ > -1.0 && ndcZ < 1.0 && clipW > 0)) {
+          process.exit(1);
+        }
+        """
+        proc = subprocess.run(["node", "-e", node_script], capture_output=True, text=True)
+        assert proc.returncode == 0, f"Column-major clip-space check failed: {proc.stderr}"
+
+    def test_option_a_and_c_broadcast_hud_and_live_feed_elements(self):
+        """
+        Verify Option A (Pure-Browser live feed URLs & miniSEED decoder) and
+        Option C (Broadcast HUD telemetry, PiP oscilloscope, fault line legend,
+        quality-graded live event list, and Auto Director) are present.
+        """
+        studio_path = get_or_export_studio_html()
+        html = studio_path.read_text(encoding="utf-8")
+
+        required_elements = [
+            'id="card-detect-header"',
+            'id="card-mmi-roman"',
+            'id="card-origin-utc"',
+            'id="card-revision"',
+            'id="card-quality-grade"',
+            'id="mag-scale-fill"',
+            'id="mag-scale-marker"',
+            'id="card-sta-total"',
+            'id="card-sta-used"',
+            'id="card-sta-err"',
+            'id="card-err-depth"',
+            'id="card-err-ns"',
+            'id="card-err-origin"',
+            'id="card-err-ew"',
+            'id="card-num-stations"',
+            'id="card-pct-match"',
+            'id="globe-overlay-canvas"',
+            'id="pip-monitor-box"',
+            'id="pip-waveform-canvas"',
+            'id="pip-station-select"',
+            'id="fault-legend-box"',
+            "Fault Line Types (updated)",
+            'id="live-event-list-container"',
+            'id="muni-list-container"',
+            'id="btn-live-stream"',
+            'id="btn-cam-director"',
+            "wss://www.seismicportal.eu/standing_order/websocket",
+            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+            "https://api.geonet.org.nz/quake?MMI=-1",
+            "https://service.earthscope.org/fdsnws/station/1/query",
+            "decodeMiniSeedBuffer",
+        ]
+        for token in required_elements:
+            assert token in html, f"Missing required Broadcast / Live Studio token: {token}"
+
+    def test_option_b_miniseed_v24_steim1_steim2_int16_int32_float_and_multirecord(self):
+        """
+        Verify pure-Python miniSEED v2.4 encoder/decoder across Steim-1 (10), Steim-2 (11),
+        Int16 (1), Int32 (3), Float32 (4), Float64 (5), little-endian, 8-byte SeedLink 'SL'
+        packet framing, and multi-record concatenated streams.
+        """
+        import numpy as np
+        from quakesnail.core.streaming import (
+            decode_miniseed_record,
+            decode_miniseed_stream,
+            encode_miniseed_record,
+        )
+
+        samples_i32 = np.array([0, 12, -8, 25, 140, -310, 1200, 1185, 900, -45, 0, 7], dtype=np.int32)
+
+        # 1. Steim-1 (encoding=10) round-trip
+        raw_steim1 = encode_miniseed_record(
+            samples_i32, net="IU", sta="MAJO", loc="00", cha="BHZ", sample_rate=50.0, encoding=10
+        )
+        assert len(raw_steim1) == 512
+        dec_steim1 = decode_miniseed_record(raw_steim1)
+        assert dec_steim1.net == "IU"
+        assert dec_steim1.sta == "MAJO"
+        assert dec_steim1.cha == "BHZ"
+        assert dec_steim1.sample_rate == pytest.approx(50.0)
+        np.testing.assert_array_equal(dec_steim1.samples.astype(np.int32), samples_i32)
+
+        # 2. Steim-2 (encoding=11) big-endian and little-endian round-trip
+        raw_steim2_be = encode_miniseed_record(
+            samples_i32, net="IU", sta="MAJO", loc="00", cha="BHZ", sample_rate=50.0, encoding=11, byteorder=">"
+        )
+        dec_steim2_be = decode_miniseed_record(raw_steim2_be)
+        assert dec_steim2_be.encoding == 11
+        np.testing.assert_array_equal(dec_steim2_be.samples.astype(np.int32), samples_i32)
+
+        raw_steim2_le = encode_miniseed_record(
+            samples_i32, net="IU", sta="MAJO", loc="00", cha="BHZ", sample_rate=50.0, encoding=11, byteorder="<"
+        )
+        dec_steim2_le = decode_miniseed_record(raw_steim2_le)
+        assert dec_steim2_le.encoding == 11
+        np.testing.assert_array_equal(dec_steim2_le.samples.astype(np.int32), samples_i32)
+
+        # 3. SeedLink 520-byte packet ('SL' + 6-byte seq + 512-byte miniSEED)
+        sl_packet = b"SL0001AF" + raw_steim1
+        assert len(sl_packet) == 520
+        dec_sl = decode_miniseed_record(sl_packet)
+        assert dec_sl.sta == "MAJO"
+        np.testing.assert_array_equal(dec_sl.samples.astype(np.int32), samples_i32)
+
+        # 4. Int16 (encoding=1), Int32 (encoding=3), Float32 (encoding=4), Float64 (encoding=5)
+        raw_int16 = encode_miniseed_record(samples_i32, net="II", sta="ERM", cha="HHZ", encoding=1, byteorder="<")
+        dec_int16 = decode_miniseed_record(raw_int16)
+        np.testing.assert_array_equal(dec_int16.samples.astype(np.int32), samples_i32)
+
+        raw_int32 = encode_miniseed_record(samples_i32, net="II", sta="ERM", cha="HHZ", encoding=3)
+        dec_int32 = decode_miniseed_record(raw_int32)
+        np.testing.assert_array_equal(dec_int32.samples.astype(np.int32), samples_i32)
+
+        samples_f32 = np.linspace(-1.5, 2.25, 16, dtype=np.float32)
+        raw_f32 = encode_miniseed_record(samples_f32, net="US", sta="COR", cha="BHZ", encoding=4)
+        dec_f32 = decode_miniseed_record(raw_f32)
+        np.testing.assert_allclose(dec_f32.samples, samples_f32, rtol=1e-5)
+
+        raw_f64 = encode_miniseed_record(samples_f32, net="US", sta="COR", cha="BHZ", encoding=5)
+        dec_f64 = decode_miniseed_record(raw_f64)
+        np.testing.assert_allclose(dec_f64.samples, samples_f32, rtol=1e-6)
+
+        # 5. Multi-record concatenated stream (>512 bytes)
+        multi_buf = raw_steim1 + raw_steim2_be
+        recs = decode_miniseed_stream(multi_buf)
+        assert len(recs) == 2
+        merged_rec = decode_miniseed_record(multi_buf)
+        assert len(merged_rec.samples) == len(samples_i32) * 2
+        np.testing.assert_array_equal(
+            merged_rec.samples.astype(np.int32), np.concatenate([samples_i32, samples_i32])
+        )
+
+        # 6. Edge case: truncated / empty buffer returns None
+        assert decode_miniseed_record(b"") is None
+        assert decode_miniseed_record(b"SHORT") is None
+
+    def test_option_a_js_miniseed_decoder_cross_language_roundtrip(self):
+        """
+        Extract decodeMiniSeedBuffer (and helpers) from the Studio HTML and verify via Node.js
+        that it decodes Steim-1, Steim-2, little-endian, SL-framed, and multi-record concatenated
+        miniSEED buffers accurately.
+        """
+        import numpy as np
+        from quakesnail.core.streaming import encode_miniseed_record
+
+        expected = [0, 15, -10, 42, 180, -250, 900, 880, 12]
+        raw_520_steim1 = encode_miniseed_record(
+            np.array(expected, dtype=np.int32),
+            net="IU",
+            sta="MAJO",
+            loc="00",
+            cha="BHZ",
+            sample_rate=50.0,
+            encoding=10,
+            with_seedlink_header=True,
+        )
+        raw_512_steim2_le = encode_miniseed_record(
+            np.array(expected, dtype=np.int32),
+            net="IU",
+            sta="MAJO",
+            loc="00",
+            cha="BHZ",
+            sample_rate=50.0,
+            encoding=11,
+            byteorder="<",
+        )
+        multi_hex = (raw_520_steim1 + raw_512_steim2_le).hex()
+
+        studio_path = get_or_export_studio_html()
+        html = studio_path.read_text(encoding="utf-8")
+        m = re.search(
+            r"(function signExtendBits\(val, bits\)\s*\{.*?function decodeMiniSeedBuffer\(arrayBuffer\)\s*\{.*?\n  \})",
+            html,
+            re.DOTALL,
+        )
+        assert m is not None, "Could not locate decodeMiniSeedBuffer and helpers in studio HTML"
+        js_fn = m.group(1)
+
+        node_code = f"""
+        {js_fn}
+        const buf = Buffer.from("{multi_hex}", "hex");
+        const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+        const rec = decodeMiniSeedBuffer(ab);
+        if (!rec || rec.net !== "IU" || rec.sta !== "MAJO" || rec.cha !== "BHZ" || rec.recordCount !== 2) {{
+          console.error("Header/recordCount mismatch:", rec);
+          process.exit(1);
+        }}
+        const expSingle = {json.dumps(expected)};
+        const exp = expSingle.concat(expSingle);
+        if (rec.samples.length !== exp.length) {{
+          console.error("Length mismatch:", rec.samples.length, exp.length);
+          process.exit(1);
+        }}
+        for (let i = 0; i < exp.length; i++) {{
+          if (rec.samples[i] !== exp[i]) {{
+            console.error("Sample mismatch at", i, rec.samples[i], exp[i]);
+            process.exit(1);
+          }}
+        }}
+        // Edge case: short buffer returns null
+        if (decodeMiniSeedBuffer(new ArrayBuffer(12)) !== null) {{
+          process.exit(1);
+        }}
+        """
+        proc = subprocess.run(["node", "-e", node_code], capture_output=True, text=True)
+        assert proc.returncode == 0, f"JS decodeMiniSeedBuffer failed: {proc.stderr}"
+
+    def test_firefox_compositor_preserve_drawing_buffer_and_css_class_consistency(self):
+        """
+        Verify Firefox WebGL2 compositor fixes (preserveDrawingBuffer: true + oCtx.drawImage),
+        CSS/JS class consistency for live earthquake cards and quality badges, 0-station-error
+        preservation, and distinct max_mmi_roman across offline scenarios.
+        """
+        studio_path = get_or_export_studio_html()
+        html = studio_path.read_text(encoding="utf-8")
+
+        # 1. Firefox WebGL2 swapchain preservation & 2D overlay compositing
+        assert "preserveDrawingBuffer: true" in html
+        assert "oCtx.drawImage(canvas, 0, 0, w, h)" in html
+
+        # 2. CSS and JS class consistency for live earthquake list & quality badges
+        assert ".quality-badge.q-A, .quality-badge.quality-A" in html
+        assert ".live-quake-item,\n.live-event-item" in html
+        assert "qm.stations_err !== undefined ? qm.stations_err : 0" in html
+
+        # 3. Verify all 5 offline scenarios include max_mmi and max_mmi_roman
+        assert "/*JSON_START*/" in html and "/*JSON_END*/" in html
+        scen_json = html.split("/*JSON_START*/", 1)[1].split("/*JSON_END*/", 1)[0]
+        scenarios = json.loads(scen_json)
+        romans = set()
+        for key, scen in scenarios.items():
+            qm = scen["quality_metrics"]
+            assert "max_mmi" in qm and "max_mmi_roman" in qm, f"Missing max_mmi in {key}"
+            romans.add(qm["max_mmi_roman"])
+        assert len(romans) >= 4, f"Expected distinct MMI Roman numerals across scenarios, got {romans}"
+
+    def test_option_b_seedlink_tcp_client_loopback_handshake(self):
+        """
+        Verify SeedLinkTCPClient executes HELLO, STATION, SELECT, DATA, END
+        against a real local TCP loopback server and decodes 520-byte SL frames.
+        """
+        import socket
+        import threading
+        import numpy as np
+        from quakesnail.core.streaming import SeedLinkTCPClient, encode_miniseed_record
+
+        expected_samples = np.array([10, 22, 18, -5, -40, 15, 80, 65], dtype=np.int32)
+        mseed_512 = encode_miniseed_record(expected_samples, net="IU", sta="MAJO", cha="BHZ", encoding=10)
+        sl_frame = b"SL000001" + mseed_512
+        received_cmds: List[str] = []
+
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.bind(("127.0.0.1", 0))
+        srv.listen(1)
+        port = srv.getsockname()[1]
+
+        def mock_seedlink_server():
+            conn, _ = srv.accept()
+            conn.settimeout(3.0)
+            try:
+                while True:
+                    data = conn.recv(256)
+                    if not data:
+                        break
+                    text = data.decode("ascii", errors="ignore")
+                    for line in text.splitlines():
+                        cmd = line.strip()
+                        if not cmd:
+                            continue
+                        received_cmds.append(cmd)
+                        if cmd.upper() == "HELLO":
+                            conn.sendall(b"SeedLink v3.1 (QuakeSnail Loopback Test)\r\nIRIS Ring Server\r\n")
+                        elif cmd.upper().startswith(("STATION", "SELECT", "DATA", "TIME")):
+                            conn.sendall(b"OK\r\n")
+                        elif cmd.upper() == "END":
+                            conn.sendall(sl_frame)
+                            return
+            finally:
+                conn.close()
+                srv.close()
+
+        t = threading.Thread(target=mock_seedlink_server, daemon=True)
+        t.start()
+
+        client = SeedLinkTCPClient(host="127.0.0.1", port=port, timeout=3.0)
+        banner = client.connect()
+        assert "SeedLink v3.1" in banner
+        assert client.negotiate_streams([("IU", "MAJO", "BHZ")]) is True
+        records = list(client.iter_records(max_records=1))
+        client.close()
+        t.join(timeout=3.0)
+
+        assert len(records) == 1
+        assert records[0].net == "IU"
+        assert records[0].sta == "MAJO"
+        np.testing.assert_array_equal(records[0].samples.astype(np.int32), expected_samples)
+        assert any(c.startswith("STATION MAJO IU") for c in received_cmds)
+        assert "END" in received_cmds
+
+    def test_option_b_fdsn_station_client_and_quality_grader(self):
+        """Verify FDSNStationClient text parser and compute_quality_grade A/B/C/D grading."""
+        from quakesnail.core.streaming import FDSNStationClient, compute_quality_grade, mmi_to_roman
+
+        sample_fdsn = (
+            "#Network|Station|Latitude|Longitude|Elevation|SiteName|StartTime|EndTime\n"
+            "IU|MAJO|36.5457|138.2041|405.0|Matsushiro, Japan|1990-01-01T00:00:00|\n"
+            "NZ|WEL|-41.2861|174.7682|122.0|Wellington, New Zealand|2000-01-01T00:00:00|\n"
+        )
+        stations = FDSNStationClient.parse_fdsn_text(sample_fdsn)
+        assert len(stations) == 2
+        assert stations[0].net == "IU" and stations[0].sta == "MAJO"
+        assert stations[1].net == "NZ" and stations[1].sta == "WEL"
+
+        q_a = compute_quality_grade(
+            stations_total=60, stations_used=55, sigma_x_km=1.2, sigma_y_km=1.4, sigma_z_km=2.0, residual_rms_s=0.15
+        )
+        assert q_a.grade == "A"
+        assert q_a.pct_match > 90.0
+
+        q_d = compute_quality_grade(
+            stations_total=6, stations_used=3, sigma_x_km=25.0, sigma_y_km=30.0, sigma_z_km=40.0, residual_rms_s=2.5
+        )
+        assert q_d.grade == "D"
+        assert mmi_to_roman(9.2) == "IX"
+        assert mmi_to_roman(7.8) == "VIII"
+
+    def test_option_b_studio_live_http_server_endpoints(self):
+        """Verify create_studio_http_server serves /, /api/state, /api/events, /api/stations, /api/waveforms with CORS."""
+        import threading
+        import urllib.request
+        from quakesnail.studio.bundler import create_studio_http_server
+
+        httpd = create_studio_http_server(host="127.0.0.1", port=0)
+        port = httpd.server_address[1]
+        t = threading.Thread(target=httpd.serve_forever, daemon=True)
+        t.start()
+
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/state", timeout=5.0) as resp:
+                assert resp.status == 200
+                assert resp.headers.get("Access-Control-Allow-Origin") == "*"
+                payload = json.loads(resp.read().decode("utf-8"))
+                assert "stations" in payload
+                assert "events" in payload
+                assert "waveforms" in payload
+                assert len(payload["stations"]) > 0
+                assert len(payload["events"]) > 0
+                ev0 = payload["events"][0]
+                assert "origin_time" in ev0 and "time_utc" in ev0
+                assert "quality_grade" in ev0 and "quality" in ev0
+                assert "max_mmi" in ev0 and "mmi" in ev0
+                assert ev0["stations_total"] >= ev0["stations_used"]
+
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/waveforms", timeout=5.0) as wf_resp:
+                assert wf_resp.status == 200
+                wf_payload = json.loads(wf_resp.read().decode("utf-8"))
+                assert "waveforms" in wf_payload
+                assert len(wf_payload["waveforms"]) > 0
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+

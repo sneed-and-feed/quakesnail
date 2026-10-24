@@ -10,6 +10,7 @@ countdown telemetry with strictly zero population felt counters.
 from __future__ import annotations
 
 from quakesnail.studio.bundler import (
+    create_studio_http_server,
     export_portable_studio,
     generate_studio_html,
     get_offline_scenarios,
@@ -17,6 +18,7 @@ from quakesnail.studio.bundler import (
 )
 
 __all__ = [
+    "create_studio_http_server",
     "export_portable_studio",
     "generate_studio_html",
     "get_offline_scenarios",
