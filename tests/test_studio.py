@@ -705,4 +705,203 @@ class TestStudioBroadcastAndLiveModes:
             httpd.shutdown()
             httpd.server_close()
 
+    def test_recognizable_world_geography_and_perspective_horizon(self):
+        """
+        Verify Natural Earth vector geography (continents, seismic island arcs, lakes, regional borders, labels),
+        seam-free 3D shader + u_earthTex without +/-180 shelf bleed or fat graticule ribbons,
+        exact perspective horizon culling (dotVis >= 1/eyeLen), and bullseye-free land-placed
+        station arrays across all 5 bundled scenarios and offshore live events via Node.js execution.
+        """
+        studio_path = get_or_export_studio_html()
+        html = studio_path.read_text(encoding="utf-8")
+
+        # 1. Verify seam-free 3D shader, anti-aliased thin graticules, and anti-meridian cut-edge filtering
+        assert "uniform sampler2D u_earthTex;" in html
+        assert "float fbm3(vec3 p)" in html
+        assert "fbm(vec2(lon * 2.5, lat * 3.5))" not in html
+        assert "if (gridLat < 0.22 || gridLon < 0.22)" not in html
+        assert "smoothstep(0.0, gWidth, gridLat)" in html
+        assert "isCutEdge(p1, p2)" in html
+        assert "harvestNearbyLandCandidates" in html
+        assert "buildEarthTexture" in html
+        assert "WORLD_LAND_RINGS" in html
+        assert "WORLD_BORDER_LINES" in html
+
+        # 2. Extract geography data, landmask, projection, and station placement functions and test in Node.js
+        m_geo = re.search(
+            r"(const WORLD_GEO_DATA = \{.*?\};\s*function decodeGeoRings\(encodedList\)\s*\{.*?const GEO_LABELS = \[.*?\];)",
+            html,
+            re.DOTALL,
+        )
+        assert m_geo is not None, "Could not locate WORLD_GEO_DATA, isPointOnLand, and GEO_LABELS in studio HTML"
+
+        m_nodes = re.search(
+            r"(function haversineKm\(lat1, lon1, lat2, lon2\)\s*\{.*?function getRegionalArrayNodes\(scen\)\s*\{.*?\n  \})",
+            html,
+            re.DOTALL,
+        )
+        assert m_nodes is not None, "Could not locate getRegionalArrayNodes in studio HTML"
+
+        m_math = re.search(
+            r"(function mat4Perspective\(out, fovy, aspect, near, far\)\s*\{.*?function projectVec3ToScreen\(vec, mvp, eye, w, h\)\s*\{.*?\n  \})",
+            html,
+            re.DOTALL,
+        )
+        assert m_math is not None, "Could not locate mat4/projection functions in studio HTML"
+
+        m_overlay = re.search(
+            r"(function renderGlobeOverlay\(w, h, eye, mvp, scen\)\s*\{.*?\n  \})",
+            html,
+            re.DOTALL,
+        )
+        assert m_overlay is not None, "Could not locate renderGlobeOverlay in studio HTML"
+
+        scen_json = html.split("/*JSON_START*/", 1)[1].split("/*JSON_END*/", 1)[0]
+
+        node_code = f"""
+        const window = {{
+          devicePixelRatio: 1,
+          QUAKESNAIL_OFFLINE_SCENARIOS: {scen_json},
+        }};
+        const state = {{
+          simTime: 18.0,
+          selectedPipStationIdx: 0,
+          projectedStations: [],
+          camera: {{ distance: 1.95 }},
+        }};
+        {m_geo.group(1)}
+        const FAULT_LINE_SEGMENTS = [{{ type: "SUBDUCTION", color: "#d633ff", pts: [[34.5,141.5],[38.3,144.2]] }}];
+        {m_nodes.group(1)}
+        {m_math.group(1)}
+
+        if (WORLD_LAND_RINGS.length < 600 || WORLD_LAKE_RINGS.length < 25 || WORLD_BORDER_LINES.length < 350 || GEO_LABELS.length < 50) {{
+          console.error("Unexpected geography counts:", WORLD_LAND_RINGS.length, WORLD_LAKE_RINGS.length, WORLD_BORDER_LINES.length, GEO_LABELS.length);
+          process.exit(1);
+        }}
+
+        // Continents AND key seismic island arcs (Kermadec, Tonga, Bonin/Ogasawara, Izu, Chatham) must be recognized as land
+        const landSamples = [
+          [36.2, 138.2, "Honshu, Japan"],
+          [43.3, 142.8, "Hokkaido, Japan"],
+          [32.8, 130.8, "Kyushu, Japan"],
+          [27.08, 142.20, "Chichijima, Bonin/Ogasawara Is."],
+          [33.11, 139.80, "Hachijojima, Izu Is."],
+          [-29.27, -177.92, "Raoul Island, Kermadec Is."],
+          [-21.18, -175.20, "Tongatapu, Tonga"],
+          [-18.62, -173.98, "Vava'u, Tonga"],
+          [-43.95, -176.50, "Chatham Island, NZ"],
+          [-43.5, 170.5, "South Island, NZ"],
+          [-38.2, 175.5, "North Island, NZ"],
+          [36.7, -119.7, "California, USA"],
+          [42.8, 13.2, "Central Italy"],
+          [52.5, -1.8, "Great Britain"],
+        ];
+        for (const [lat, lon, label] of landSamples) {{
+          if (!isPointOnLand(lat, lon)) {{
+            console.error("Expected land at", label, lat, lon);
+            process.exit(1);
+          }}
+        }}
+
+        // Open oceans and carved inland seismic-zone lakes (Lake Taupo, Lake Biwa, Lake Tahoe) must be recognized as water
+        const waterSamples = [
+          [0.0, -150.0, "Central Pacific"],
+          [25.0, -45.0, "North Atlantic"],
+          [-20.0, 80.0, "Indian Ocean"],
+          [38.0, 145.5, "Offshore Japan Trench"],
+          [-38.79, 175.90, "Lake Taupo, NZ"],
+          [35.25, 136.08, "Lake Biwa, Japan"],
+          [39.09, -120.04, "Lake Tahoe, CA/NV"],
+        ];
+        for (const [lat, lon, label] of waterSamples) {{
+          if (isPointOnLand(lat, lon)) {{
+            console.error("Expected water at", label, lat, lon);
+            process.exit(1);
+          }}
+        }}
+
+        // Perspective horizon limb test: camera at (0, 0, 2.35) looking at origin.
+        // True horizon limb is at cos(theta) = 1 / 2.35 = 0.42553 (theta = 64.8 deg).
+        // A point at lat=0, lon=70 deg (cos(70 deg) = 0.342 < 0.42553) is behind the perspective limb and must return null.
+        const dist = 2.35;
+        const eye = [0, 0, dist];
+        const proj = new Float32Array(16);
+        const view = new Float32Array(16);
+        const mvp = new Float32Array(16);
+        mat4Perspective(proj, (45 * Math.PI) / 180.0, 1.0, 0.02, 100.0);
+        mat4LookAt(view, eye, [0, 0, 0], [0, 1, 0]);
+        mat4Multiply(mvp, proj, view);
+
+        const behindLimb = projectVec3ToScreen(latLonToVec3(0, 70), mvp, eye, 800, 800);
+        if (behindLimb !== null) {{
+          console.error("Point behind perspective limb should be culled, got:", behindLimb);
+          process.exit(1);
+        }}
+        const frontCenter = projectVec3ToScreen(latLonToVec3(0, 0), mvp, eye, 800, 800);
+        if (!frontCenter || Math.abs(frontCenter.x - 400) > 1 || Math.abs(frontCenter.y - 400) > 1) {{
+          console.error("Center point projection mismatch:", frontCenter);
+          process.exit(1);
+        }}
+
+        // Verify all 5 bundled scenarios AND a live offshore Kuril event place 100% of stations on land without bullseye clumping
+        const allScenarios = Object.values(window.QUAKESNAIL_OFFLINE_SCENARIOS);
+        allScenarios.push({{
+          id: "live_kuril_offshore",
+          hypocenter: {{ lat: 48.7, lon: 156.1, depth_km: 10.0 }},
+          magnitude: {{ mw: 4.9 }},
+          stations: [
+            {{ id: "ST01", dist_km: 25.0, pga_g: 0.12 }},
+            {{ id: "ST02", dist_km: 70.0, pga_g: 0.06 }},
+            {{ id: "ST03", dist_km: 115.0, pga_g: 0.03 }},
+            {{ id: "ST04", dist_km: 160.0, pga_g: 0.02 }},
+          ],
+        }});
+
+        for (const sc of allScenarios) {{
+          _cachedArrayKey = null;
+          const nodes = getRegionalArrayNodes(sc);
+          if (nodes.length < 55) {{
+            console.error("Expected >=55 regional array nodes for", sc.id, "got", nodes.length);
+            process.exit(1);
+          }}
+          const onLandCount = nodes.filter(n => isPointOnLand(n.lat, n.lon)).length;
+          if (onLandCount !== nodes.length) {{
+            console.error("Expected 100% of stations on land for", sc.id, "got", onLandCount, "/", nodes.length);
+            process.exit(1);
+          }}
+          // Verify stations are distributed across regional distances, not packed into a tight <200km bullseye
+          const farCount = nodes.filter(n => n.dist_km > 220.0).length;
+          if (farCount < 15) {{
+            console.error("Expected stations distributed beyond 220km for", sc.id, "got only", farCount);
+            process.exit(1);
+          }}
+        }}
+
+        // Execute renderGlobeOverlay in both WebGL2 mode (glReady=true) and Software 3D Fallback mode (glReady=false)
+        let strokeCalls = 0, fillCalls = 0, textCalls = 0;
+        const document = {{ getElementById: () => ({{ style: {{}}, textContent: "" }}) }};
+        const canvas = {{ width: 800, height: 800 }};
+        const overlayCanvas = {{ width: 800, height: 800 }};
+        const oCtx = {{
+          save() {{}}, restore() {{}}, scale() {{}}, clearRect() {{}}, drawImage() {{}},
+          beginPath() {{}}, closePath() {{}}, moveTo() {{}}, lineTo() {{}}, arc() {{}}, clip() {{}},
+          stroke() {{ strokeCalls++; }}, fill() {{ fillCalls++; }},
+          fillRect() {{}}, strokeRect() {{}}, setLineDash() {{}},
+          fillText() {{ textCalls++; }}, strokeText() {{}},
+          measureText(t) {{ return {{ width: t.length * 6 }}; }},
+          createRadialGradient() {{ return {{ addColorStop() {{}} }}; }},
+        }};
+        let glReady = true;
+        {m_overlay.group(1)}
+        renderGlobeOverlay(800, 800, eye, mvp, allScenarios[0]);
+        glReady = false;
+        renderGlobeOverlay(800, 800, eye, mvp, allScenarios[0]);
+        if (strokeCalls < 10 || fillCalls < 50 || textCalls < 5) {{
+          console.error("Unexpected canvas call counts in renderGlobeOverlay:", strokeCalls, fillCalls, textCalls);
+          process.exit(1);
+        }}
+        """
+        proc = subprocess.run(["node", "-"], input=node_code, capture_output=True, text=True)
+        assert proc.returncode == 0, f"JS geography/horizon test failed: {proc.stderr}"
+
 
