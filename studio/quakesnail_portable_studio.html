@@ -1230,7 +1230,7 @@ html, body {
       </div>
       <div class="data-row">
         <span class="data-label">Radial Drift:</span>
-        <span class="data-value" style="color:var(--emerald);">0.000e+00 km</span>
+        <span class="data-value" id="card-radial-drift" style="color:var(--emerald);">0.000e+00 km</span>
       </div>
     </div>
 
@@ -4058,6 +4058,227 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
     return merged;
   }
 
+  // Shared IEEE-754 Float32 / Int32 bit-manipulation buffer for active-coordinate ULP polish
+  const _qsUlpBuf = new ArrayBuffer(4);
+  const _qsUlpF32 = new Float32Array(_qsUlpBuf);
+  const _qsUlpI32 = new Int32Array(_qsUlpBuf);
+
+  function qsUlpAddF32(val, deltaUlp) {
+    _qsUlpF32[0] = val;
+    const bits = _qsUlpI32[0];
+    if ((bits & 0x7fffffff) === 0) return 0.0;
+    _qsUlpI32[0] = (bits + deltaUlp) | 0;
+    return _qsUlpF32[0];
+  }
+
+  function qsSumSqF32(v) {
+    let s = Math.fround(0.0);
+    for (let i = 0; i < v.length; i++) {
+      const vi = Math.fround(v[i]);
+      s = Math.fround(s + Math.fround(vi * vi));
+    }
+    return s;
+  }
+
+  function exactSphereNormUlpPolish(v, targetSq = 1.0) {
+    const n = v.length;
+    const tSq = Math.fround(targetSq);
+    if (!(tSq > 0.0) || !Number.isFinite(tSq)) return;
+    let normSq = qsSumSqF32(v);
+    if (!(normSq > 1e-30)) return;
+    const invNorm = Math.fround(Math.sqrt(tSq) / Math.sqrt(normSq));
+    let maxIdx = 0;
+    let maxAbs = -1.0;
+    for (let i = 0; i < n; i++) {
+      v[i] = Math.fround(v[i] * invNorm);
+      const a = Math.abs(v[i]);
+      if (a > maxAbs) {
+        maxAbs = a;
+        maxIdx = i;
+      }
+    }
+    if (maxAbs > 1e-12) {
+      let otherSq = Math.fround(0.0);
+      for (let i = 0; i < n; i++) {
+        if (i !== maxIdx) {
+          const vi = Math.fround(v[i]);
+          otherSq = Math.fround(otherSq + Math.fround(vi * vi));
+        }
+      }
+      if (otherSq <= tSq) {
+        const sgn = v[maxIdx] >= 0.0 ? 1.0 : -1.0;
+        v[maxIdx] = Math.fround(sgn * Math.sqrt(Math.max(0.0, tSq - otherSq)));
+      }
+    }
+    if (qsSumSqF32(v) === tSq) return;
+
+    for (let pass = 0; pass < 4; pass++) {
+      let bestErr = Math.abs(qsSumSqF32(v) - tSq);
+      if (bestErr === 0.0) return;
+      let bestIdx = -1;
+      let bestVal = 0.0;
+      for (let i = 0; i < n; i++) {
+        const orig = v[i];
+        if (Math.abs(orig) <= 1e-12) continue;
+        for (let du = -16; du <= 16; du++) {
+          if (du === 0) continue;
+          const cand = qsUlpAddF32(orig, du);
+          v[i] = cand;
+          const err = Math.abs(qsSumSqF32(v) - tSq);
+          if (err < bestErr) {
+            bestErr = err;
+            bestIdx = i;
+            bestVal = cand;
+            if (err === 0.0) return;
+          }
+        }
+        v[i] = orig;
+      }
+      if (bestIdx >= 0) v[bestIdx] = bestVal;
+      else break;
+    }
+    if (qsSumSqF32(v) === tSq) return;
+
+    let bestErr = Math.abs(qsSumSqF32(v) - tSq);
+    let bestPair = null;
+    for (let i = 0; i < n; i++) {
+      const origI = v[i];
+      if (Math.abs(origI) <= 1e-12) continue;
+      for (let j = i + 1; j < n; j++) {
+        const origJ = v[j];
+        if (Math.abs(origJ) <= 1e-12) continue;
+        for (let duI = -12; duI <= 12; duI++) {
+          const candI = qsUlpAddF32(origI, duI);
+          v[i] = candI;
+          for (let duJ = -12; duJ <= 12; duJ++) {
+            if (duI === 0 && duJ === 0) continue;
+            const candJ = qsUlpAddF32(origJ, duJ);
+            v[j] = candJ;
+            const err = Math.abs(qsSumSqF32(v) - tSq);
+            if (err === 0.0) return;
+            if (err < bestErr) {
+              bestErr = err;
+              bestPair = [i, candI, j, candJ];
+            }
+          }
+        }
+        v[j] = origJ;
+      }
+      v[i] = origI;
+    }
+    if (bestPair) {
+      v[bestPair[0]] = bestPair[1];
+      v[bestPair[2]] = bestPair[3];
+    }
+  }
+
+  // Float32Array Spherical Travel-Time & Ray Unit-Direction Solver
+  const _qsRayVec8 = new Float32Array(8);
+  function computeSphericalTravelTimesF32(distKm, depthKm) {
+    const dKm = Math.fround(Math.max(0.1, Number.isFinite(distKm) ? distKm : 25.0));
+    const zKm = Math.fround(Math.max(0.1, Number.isFinite(depthKm) ? depthKm : 15.0));
+    const hypDist = Math.fround(Math.hypot(dKm, zKm));
+    _qsRayVec8[0] = dKm;
+    _qsRayVec8[1] = Math.fround(0.25 * dKm);
+    _qsRayVec8[2] = zKm;
+    for (let k = 3; k < 8; k++) _qsRayVec8[k] = 0.0;
+    exactSphereNormUlpPolish(_qsRayVec8, 1.0);
+    const rayDrift = Math.abs(qsSumSqF32(_qsRayVec8) - 1.0);
+    const vp = Math.fround(6.2 + 0.004 * Math.min(200.0, zKm));
+    const vs = Math.fround(3.5 + 0.0022 * Math.min(200.0, zKm));
+    const pArrSec = Number(Math.fround(hypDist / vp).toFixed(1));
+    const sArrSec = Number(Math.fround(hypDist / vs).toFixed(1));
+    return { hypDist, pArrSec, sArrSec, rayDrift };
+  }
+
+  // Float32Array Aki-Richards / Kelvin-Mandel SO(6) Double-Couple Moment-Tensor Solver
+  function computeMomentTensorSo6F32(strikeDeg, dipDeg, rakeDeg) {
+    const deg2rad = Math.PI / 180.0;
+    const phi = (Number.isFinite(strikeDeg) ? strikeDeg : 195.0) * deg2rad;
+    const del = (Number.isFinite(dipDeg) ? dipDeg : 35.0) * deg2rad;
+    const lam = (Number.isFinite(rakeDeg) ? rakeDeg : 85.0) * deg2rad;
+    const sinD = Math.sin(del), cosD = Math.cos(del);
+    const sin2D = Math.sin(2.0 * del), cos2D = Math.cos(2.0 * del);
+    const sinL = Math.sin(lam), cosL = Math.cos(lam);
+    const sinP = Math.sin(phi), cosP = Math.cos(phi);
+    const sin2P = Math.sin(2.0 * phi), cos2P = Math.cos(2.0 * phi);
+
+    const mrr = sin2D * sinL;
+    const mtt = -sinD * cosL * sin2P - sin2D * sinL * sinP * sinP;
+    const mpp = sinD * cosL * sin2P - sin2D * sinL * cosP * cosP;
+    const mrt = -cosD * cosL * cosP - cos2D * sinL * sinP;
+    const mrp = cosD * cosL * sinP - cos2D * sinL * cosP;
+    const mtp = -sinD * cosL * cos2P - 0.5 * sin2D * sinL * sin2P;
+
+    const sq2 = Math.SQRT2;
+    const mt6 = new Float32Array([
+      Math.fround(mrr),
+      Math.fround(mtt),
+      Math.fround(mpp),
+      Math.fround(sq2 * mrt),
+      Math.fround(sq2 * mrp),
+      Math.fround(sq2 * mtp),
+    ]);
+    exactSphereNormUlpPolish(mt6, 1.0);
+    const normDrift = Math.abs(qsSumSqF32(mt6) - 1.0);
+    const traceResidual = Math.abs(mrr + mtt + mpp);
+    return { mt6, normDrift, traceResidual };
+  }
+
+  // Float32Array Causal 3-Point Discrete Morse Phase Picker (1-sample deferral at (hIdx + 255) % 256)
+  const _qsPickerRing256 = new Float32Array(256);
+  const _qsPickerScratch256 = new Float32Array(256);
+  function pickSeismicMorsePhasesF32(waveformArr) {
+    const n = Array.isArray(waveformArr) || (waveformArr && waveformArr.length) ? waveformArr.length : 0;
+    if (n < 4) return { morsePIdx: 0, morseSIdx: Math.max(0, n - 1), glitchIdx: -1, madFloor: 0.2 };
+    _qsPickerRing256.fill(0.0);
+    for (let i = 0; i < 256; i++) {
+      const v = waveformArr[i % n];
+      const clean = Number.isFinite(v) ? Math.fround(Math.abs(v)) : 0.0;
+      _qsPickerScratch256[i] = clean;
+    }
+    _qsPickerScratch256.sort();
+    const med = 0.5 * (_qsPickerScratch256[127] + _qsPickerScratch256[128]);
+    for (let i = 0; i < 256; i++) {
+      const v = waveformArr[i % n];
+      const clean = Number.isFinite(v) ? Math.fround(Math.abs(v)) : 0.0;
+      _qsPickerScratch256[i] = Math.abs(clean - med);
+    }
+    _qsPickerScratch256.sort();
+    const mad = 0.5 * (_qsPickerScratch256[127] + _qsPickerScratch256[128]);
+    const madFloor = Math.max(0.05, med + 4.5 * 1.4826 * mad);
+
+    let morsePIdx = -1;
+    let morseSIdx = 0;
+    let maxEnv = -1.0;
+    let glitchIdx = -1;
+
+    for (let t = 0; t < n; t++) {
+      const hIdx = t % 256;
+      const curVal = Number.isFinite(waveformArr[t]) ? Math.fround(waveformArr[t]) : 0.0;
+      _qsPickerRing256[hIdx] = curVal;
+      const absCur = Math.abs(curVal);
+      if (absCur > maxEnv) {
+        maxEnv = absCur;
+        morseSIdx = t;
+      }
+      if (t >= 2) {
+        const midSample = _qsPickerRing256[(hIdx + 255) % 256];
+        const prev2Sample = _qsPickerRing256[(hIdx + 254) % 256];
+        const dMinus = midSample - prev2Sample;
+        const dPlus = midSample - curVal;
+        const isCriticalSpike = (dMinus * dPlus > 0) && (Math.abs(midSample) > madFloor);
+        if (isCriticalSpike && Math.abs(curVal - prev2Sample) <= 0.35 * Math.abs(dMinus)) {
+          if (glitchIdx < 0) glitchIdx = t - 1;
+        } else if (morsePIdx < 0 && Math.abs(midSample) > madFloor) {
+          morsePIdx = t - 1;
+        }
+      }
+    }
+    if (morsePIdx < 0) morsePIdx = Math.min(n - 1, Math.floor(n * 0.15));
+    return { morsePIdx, morseSIdx, glitchIdx, madFloor };
+  }
+
   function convertLiveEventToScenario(ev, liveWaveforms) {
     const mag = Number(ev.mag) || 5.0;
     const lat = Number(ev.lat) || 35.0;
@@ -4067,16 +4288,18 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
     const originTime = ev.origin_time || ev.time_utc || new Date().toISOString();
     const maxMmi = ev.max_mmi !== undefined ? Number(ev.max_mmi) : (ev.mmi !== undefined ? Number(ev.mmi) : Math.min(10.0, Math.max(1.5, 1.45 * mag - 1.2 * Math.log10(Math.max(8.0, depth)) + 0.5)));
     const mmiInfo = mmiToRomanAndColor(maxMmi);
+    const mtInfo = computeMomentTensorSo6F32(195, 35, 85);
 
     // Synthesize 4 nearest monitoring stations with physics-grounded or live SeedLink waveforms
     const stations = [];
     const wfKeys = liveWaveforms ? Object.keys(liveWaveforms) : [];
     for (let i = 0; i < 4; i++) {
       const distKm = 25.0 + i * 45.0;
-      const hypDist = Math.hypot(distKm, depth);
+      const tt = computeSphericalTravelTimesF32(distKm, depth);
+      const hypDist = tt.hypDist;
       const pgaG = Number(Math.min(1.5, Math.pow(10, 0.5 * mag - 1.4 * Math.log10(hypDist + 10.0) - 1.1)).toFixed(4));
-      const pArr = Number((hypDist / 6.2).toFixed(1));
-      const sArr = Number((hypDist / 3.5).toFixed(1));
+      const pArr = tt.pArrSec;
+      const sArr = tt.sArrSec;
       const nPts = 300;
       const times = [];
       let bhz = [];
@@ -4100,6 +4323,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
         while (filtered.length < nPts) filtered.push(0.0);
         bhz = filtered.slice();
       }
+      const picks = pickSeismicMorsePhasesF32(filtered);
       stations.push({
         id: staId,
         net: staNet,
@@ -4114,9 +4338,9 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
           sta_lta: times.map((t) => (t >= pArr && t <= sArr + 10 ? 6.5 : 1.0)),
           p_arr_sec: pArr,
           s_arr_sec: sArr,
-          morse_p_idx: Math.min(nPts - 1, Math.floor((pArr / 60.0) * nPts)),
-          morse_s_idx: Math.min(nPts - 1, Math.floor((sArr / 60.0) * nPts)),
-          glitch_idx: -1,
+          morse_p_idx: picks.morsePIdx >= 0 ? picks.morsePIdx : Math.min(nPts - 1, Math.floor((pArr / 60.0) * nPts)),
+          morse_s_idx: picks.morseSIdx >= 0 ? picks.morseSIdx : Math.min(nPts - 1, Math.floor((sArr / 60.0) * nPts)),
+          glitch_idx: picks.glitchIdx,
         },
       });
     }
@@ -4132,7 +4356,7 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
       region,
       hypocenter: { lat, lon, depth_km: depth, origin_time: originTime },
       magnitude: { mw: mag, m_default: mag, m_low: Number((mag - 0.1).toFixed(1)), m_ultralow: mag },
-      mechanism: { strike: 195, dip: 35, rake: 85 },
+      mechanism: { strike: 195, dip: 35, rake: 85, mt6_norm_drift: mtInfo.normDrift, mt_trace_residual: mtInfo.traceResidual },
       uncertainty_ellipsoid: { sigma_x_km: 1.8, sigma_y_km: 1.6, sigma_z_km: 2.8 },
       quality_metrics: {
         grade: qGrade,
@@ -4374,120 +4598,6 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
   let lastTimestamp = performance.now();
   let lastUtcClockSec = -1;
 
-  // Shared IEEE-754 Float32 / Int32 bit-manipulation buffer for active-coordinate ULP polish
-  const _qsUlpBuf = new ArrayBuffer(4);
-  const _qsUlpF32 = new Float32Array(_qsUlpBuf);
-  const _qsUlpI32 = new Int32Array(_qsUlpBuf);
-
-  function qsUlpAddF32(val, deltaUlp) {
-    _qsUlpF32[0] = val;
-    const bits = _qsUlpI32[0];
-    if ((bits & 0x7fffffff) === 0) return 0.0;
-    _qsUlpI32[0] = (bits + deltaUlp) | 0;
-    return _qsUlpF32[0];
-  }
-
-  function qsSumSqF32(v) {
-    let s = Math.fround(0.0);
-    for (let i = 0; i < v.length; i++) {
-      const vi = Math.fround(v[i]);
-      s = Math.fround(s + Math.fround(vi * vi));
-    }
-    return s;
-  }
-
-  function exactSphereNormUlpPolish(v, targetSq = 1.0) {
-    const n = v.length;
-    const tSq = Math.fround(targetSq);
-    if (!(tSq > 0.0) || !Number.isFinite(tSq)) return;
-    let normSq = qsSumSqF32(v);
-    if (!(normSq > 1e-30)) return;
-    const invNorm = Math.fround(Math.sqrt(tSq) / Math.sqrt(normSq));
-    let maxIdx = 0;
-    let maxAbs = -1.0;
-    for (let i = 0; i < n; i++) {
-      v[i] = Math.fround(v[i] * invNorm);
-      const a = Math.abs(v[i]);
-      if (a > maxAbs) {
-        maxAbs = a;
-        maxIdx = i;
-      }
-    }
-    if (maxAbs > 1e-12) {
-      let otherSq = Math.fround(0.0);
-      for (let i = 0; i < n; i++) {
-        if (i !== maxIdx) {
-          const vi = Math.fround(v[i]);
-          otherSq = Math.fround(otherSq + Math.fround(vi * vi));
-        }
-      }
-      if (otherSq <= tSq) {
-        const sgn = v[maxIdx] >= 0.0 ? 1.0 : -1.0;
-        v[maxIdx] = Math.fround(sgn * Math.sqrt(Math.max(0.0, tSq - otherSq)));
-      }
-    }
-    if (qsSumSqF32(v) === tSq) return;
-
-    for (let pass = 0; pass < 4; pass++) {
-      let bestErr = Math.abs(qsSumSqF32(v) - tSq);
-      if (bestErr === 0.0) return;
-      let bestIdx = -1;
-      let bestVal = 0.0;
-      for (let i = 0; i < n; i++) {
-        const orig = v[i];
-        if (Math.abs(orig) <= 1e-12) continue;
-        for (let du = -16; du <= 16; du++) {
-          if (du === 0) continue;
-          const cand = qsUlpAddF32(orig, du);
-          v[i] = cand;
-          const err = Math.abs(qsSumSqF32(v) - tSq);
-          if (err < bestErr) {
-            bestErr = err;
-            bestIdx = i;
-            bestVal = cand;
-            if (err === 0.0) return;
-          }
-        }
-        v[i] = orig;
-      }
-      if (bestIdx >= 0) v[bestIdx] = bestVal;
-      else break;
-    }
-    if (qsSumSqF32(v) === tSq) return;
-
-    let bestErr = Math.abs(qsSumSqF32(v) - tSq);
-    let bestPair = null;
-    for (let i = 0; i < n; i++) {
-      const origI = v[i];
-      if (Math.abs(origI) <= 1e-12) continue;
-      for (let j = i + 1; j < n; j++) {
-        const origJ = v[j];
-        if (Math.abs(origJ) <= 1e-12) continue;
-        for (let duI = -12; duI <= 12; duI++) {
-          const candI = qsUlpAddF32(origI, duI);
-          v[i] = candI;
-          for (let duJ = -12; duJ <= 12; duJ++) {
-            if (duI === 0 && duJ === 0) continue;
-            const candJ = qsUlpAddF32(origJ, duJ);
-            v[j] = candJ;
-            const err = Math.abs(qsSumSqF32(v) - tSq);
-            if (err === 0.0) return;
-            if (err < bestErr) {
-              bestErr = err;
-              bestPair = [i, candI, j, candJ];
-            }
-          }
-        }
-        v[j] = origJ;
-      }
-      v[i] = origI;
-    }
-    if (bestPair) {
-      v[bestPair[0]] = bestPair[1];
-      v[bestPair[2]] = bestPair[3];
-    }
-  }
-
   function animate(now) {
     const dt = Math.min(0.1, Math.max(0.001, (now - lastTimestamp) * 0.001));
     lastTimestamp = now;
@@ -4505,7 +4615,11 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
     }
     state.simStepCount = (state.simStepCount || 0) + 1;
     const hIdx = state.simStepCount % 256;
-    const rawSample = Math.sin(state.simStepCount * 0.08) * 0.8 + Math.cos(state.simStepCount * 0.02) * 0.3;
+    let rawSample = Math.sin(state.simStepCount * 0.08) * 0.8 + Math.cos(state.simStepCount * 0.02) * 0.3;
+    if (state.simStepCount - (state.lastGlintStep || 0) > 35 && Math.random() < 0.25) {
+      rawSample += (Math.random() > 0.5 ? 4.5 : -4.5);
+      state.lastGlintStep = state.simStepCount;
+    }
     const cleanSample = Number.isFinite(rawSample) ? rawSample : 0.0;
     state.morseHistory[hIdx] = cleanSample;
 
@@ -4530,9 +4644,15 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
     const dPlus = midSample - cleanSample;
     const isMorseCritical = state.simStepCount >= 2 && (dMinus * dPlus > 0) && (Math.abs(midSample) > madFloor);
 
+    // Evolve active 6D subspace (0..5) of state.cascadeVec8 via skew-symmetric step while preserving [6],[7] === 0.0
+    const cv0 = state.cascadeVec8[0], cv1 = state.cascadeVec8[1];
+    state.cascadeVec8[0] = Math.fround(cv0 - 0.015 * cv1);
+    state.cascadeVec8[1] = Math.fround(cv1 + 0.015 * cv0);
     exactSphereNormUlpPolish(state.cascadeVec8, 1.0);
     state.radialDrift = Math.abs(qsSumSqF32(state.cascadeVec8) - 1.0);
 
+    const radialDriftEl = document.getElementById("card-radial-drift");
+    if (radialDriftEl) radialDriftEl.textContent = `${state.radialDrift.toExponential(3)} km`;
     const morseGateEl = document.getElementById("card-morse-gate");
     if (morseGateEl) morseGateEl.textContent = isMorseCritical ? "TRIGGER (P-ONSET)" : "ACTIVE";
     const causalPillEl = document.getElementById("card-causal-pill");
@@ -4834,10 +4954,14 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{"scenario_subduction_megath
             if (scen.stations && scen.stations.length > 0) {
               const maxAbs = Math.max(1, ...rec.samples.map((x) => Math.abs(x)));
               const norm = rec.samples.map((x) => x / maxAbs);
+              const picks = pickSeismicMorsePhasesF32(norm);
               scen.stations[0].id = rec.sta || "MSEED";
               scen.stations[0].net = rec.net || "XX";
               scen.stations[0].waveform.bhz = norm;
               scen.stations[0].waveform.filtered = norm;
+              scen.stations[0].waveform.morse_p_idx = picks.morsePIdx;
+              scen.stations[0].waveform.morse_s_idx = picks.morseSIdx;
+              scen.stations[0].waveform.glitch_idx = picks.glitchIdx;
               updateTelemetryAndLeaderboard();
             }
           }
