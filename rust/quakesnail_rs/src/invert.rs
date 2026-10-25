@@ -5,19 +5,20 @@
 #![allow(dead_code)]
 
 use crate::associate::haversine_distance_km;
+use crate::math::*;
 use crate::{
     ClusterSlot, HypocenterResult, PickSlot, StationSlot, MAX_PICKS,
     MAX_STATIONS, RAY_DISCRETIZATION,
 };
 
 pub const EARTH_RADIUS_KM: f32 = 6371.0;
-pub const PI: f32 = 3.14159265358979323846;
+pub const PI: f32 = core::f32::consts::PI;
 pub const DEG_TO_RAD: f32 = PI / 180.0;
 pub const RAD_TO_DEG: f32 = 180.0 / PI;
 
 /// Dziewonski & Anderson (1981) PREM Compressional P-wave velocity V_p(r) in km/s.
 pub fn prem_vp_kms(r_km: f32) -> f32 {
-    let r = r_km.max(0.0).min(EARTH_RADIUS_KM);
+    let r = r_km.clamp(0.0, EARTH_RADIUS_KM);
     let x = r / EARTH_RADIUS_KM;
 
     if r < 1221.5 {
@@ -52,7 +53,7 @@ pub fn prem_vp_kms(r_km: f32) -> f32 {
 
 /// PREM Shear S-wave velocity V_s(r) in km/s.
 pub fn prem_vs_kms(r_km: f32) -> f32 {
-    let r = r_km.max(0.0).min(EARTH_RADIUS_KM);
+    let r = r_km.clamp(0.0, EARTH_RADIUS_KM);
     let x = r / EARTH_RADIUS_KM;
 
     if r < 1221.5 {
@@ -94,21 +95,21 @@ pub fn velocity_3d_p(
     slab_dip_deg: f32,
     slab_azimuth_deg: f32,
 ) -> f32 {
-    let r_km = (x_km * x_km + y_km * y_km + z_km * z_km).sqrt();
+    let r_km = fast_sqrt(x_km * x_km + y_km * y_km + z_km * z_km);
     let base_vp = prem_vp_kms(r_km);
 
     // 1. Subducting Slab: +3.5% tabular body
     let dip_rad = slab_dip_deg * DEG_TO_RAD;
     let az_rad = slab_azimuth_deg * DEG_TO_RAD;
-    let n_slab_x = dip_rad.sin() * az_rad.cos();
-    let n_slab_y = dip_rad.sin() * az_rad.sin();
-    let n_slab_z = dip_rad.cos();
+    let n_slab_x = fast_sin(dip_rad) * fast_cos(az_rad);
+    let n_slab_y = fast_sin(dip_rad) * fast_sin(az_rad);
+    let n_slab_z = fast_cos(dip_rad);
 
     // Distance to slab plane passing through origin or subduction trench
     let slab_dist = (x_km * n_slab_x + y_km * n_slab_y + (z_km - 6371.0) * n_slab_z).abs();
     let sigma_slab = 45.0; // 45 km slab half-thickness
     let delta_slab = if r_km > 3480.0 {
-        0.035 * (-0.5 * (slab_dist * slab_dist) / (sigma_slab * sigma_slab)).exp()
+        0.035 * fast_exp(-0.5 * (slab_dist * slab_dist) / (sigma_slab * sigma_slab))
     } else {
         0.0
     };
@@ -116,10 +117,10 @@ pub fn velocity_3d_p(
     // 2. Thermal Mantle Plume: -3.0% cylindrical conduit
     let plume_x = 0.0f32;
     let plume_y = 0.0f32;
-    let d_plume_axis = ((x_km - plume_x) * (x_km - plume_x) + (y_km - plume_y) * (y_km - plume_y)).sqrt();
+    let d_plume_axis = fast_sqrt((x_km - plume_x) * (x_km - plume_x) + (y_km - plume_y) * (y_km - plume_y));
     let r_plume = 100.0; // 100 km plume radius
     let delta_plume = if r_km > 3480.0 && r_km < 6000.0 {
-        -0.030 * (-0.5 * (d_plume_axis * d_plume_axis) / (r_plume * r_plume)).exp()
+        -0.030 * fast_exp(-0.5 * (d_plume_axis * d_plume_axis) / (r_plume * r_plume))
     } else {
         0.0
     };
@@ -132,15 +133,16 @@ pub fn lat_lon_depth_to_cartesian(lat_deg: f32, lon_deg: f32, depth_km: f32) -> 
     let r = (EARTH_RADIUS_KM - depth_km).max(10.0);
     let phi = lat_deg * DEG_TO_RAD;
     let lam = lon_deg * DEG_TO_RAD;
-    let x = r * phi.cos() * lam.cos();
-    let y = r * phi.cos() * lam.sin();
-    let z = r * phi.sin();
+    let x = r * fast_cos(phi) * fast_cos(lam);
+    let y = r * fast_cos(phi) * fast_sin(lam);
+    let z = r * fast_sin(phi);
     (x, y, z)
 }
 
 /// 3D Minimum-Time Pseudo-Bending Raytracer (Um & Thurber 1987).
 /// Discretizes path into `num_nodes` (<= 64) and iteratively relaxes node coordinates.
 /// Writes bent ray coordinates into `out_nodes_xyz` and total travel time into `out_travel_time`.
+#[allow(clippy::too_many_arguments)]
 pub fn trace_pseudo_bending_prem_slab(
     src_lat: f32,
     src_lon: f32,
@@ -155,30 +157,30 @@ pub fn trace_pseudo_bending_prem_slab(
     out_nodes_xyz: &mut [f32],
     out_travel_time: &mut f32,
 ) {
-    let n = num_nodes.max(8).min(RAY_DISCRETIZATION);
+    let n = num_nodes.clamp(8, RAY_DISCRETIZATION);
     let (x0, y0, z0) = lat_lon_depth_to_cartesian(src_lat, src_lon, src_depth);
     let (x1, y1, z1) = lat_lon_depth_to_cartesian(rcv_lat, rcv_lon, rcv_depth);
 
     // 1. Initialize ray path in 3D Cartesian coordinates
     if phase == crate::PHASE_PKP || phase == crate::PHASE_PKIKP {
         let r_cmb = 3480.0f32;
-        let r_src = (x0 * x0 + y0 * y0 + z0 * z0).sqrt();
-        let r_rcv = (x1 * x1 + y1 * y1 + z1 * z1).sqrt();
-        let dot_val = ((x0 * x1 + y0 * y1 + z0 * z1) / (r_src * r_rcv)).max(-1.0).min(1.0);
-        let delta_rad = dot_val.acos();
+        let r_src = fast_sqrt(x0 * x0 + y0 * y0 + z0 * z0);
+        let r_rcv = fast_sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+        let dot_val = ((x0 * x1 + y0 * y1 + z0 * z1) / (r_src * r_rcv)).clamp(-1.0, 1.0);
+        let delta_rad = fast_acos(dot_val);
         let delta_deg = delta_rad * RAD_TO_DEG;
 
         let nx = y0 * z1 - z0 * y1;
         let ny = z0 * x1 - x0 * z1;
         let nz = x0 * y1 - y0 * x1;
-        let norm_n = (nx * nx + ny * ny + nz * nz).sqrt();
+        let norm_n = fast_sqrt(nx * nx + ny * ny + nz * nz);
         let (ux, uy, uz) = (x0 / r_src, y0 / r_src, z0 / r_src);
         let (tx, ty, tz) = if norm_n > 1e-6 {
             let (nx_u, ny_u, nz_u) = (nx / norm_n, ny / norm_n, nz / norm_n);
             let cx = ny_u * uz - nz_u * uy;
             let cy = nz_u * ux - nx_u * uz;
             let cz = nx_u * uy - ny_u * ux;
-            let norm_c = (cx * cx + cy * cy + cz * cz).sqrt().max(1e-6);
+            let norm_c = fast_sqrt(cx * cx + cy * cy + cz * cz).max(1e-6);
             (cx / norm_c, cy / norm_c, cz / norm_c)
         } else {
             (0.0, 1.0, 0.0)
@@ -186,13 +188,13 @@ pub fn trace_pseudo_bending_prem_slab(
 
         let theta_m_deg = (delta_deg * 0.14).min(20.0);
         let theta_m_rad = theta_m_deg * DEG_TO_RAD;
-        let (sin_m, cos_m) = (theta_m_rad.sin(), theta_m_rad.cos());
+        let (sin_m, cos_m) = (fast_sin(theta_m_rad), fast_cos(theta_m_rad));
         let cmb_in_x = (cos_m * ux + sin_m * tx) * r_cmb;
         let cmb_in_y = (cos_m * uy + sin_m * ty) * r_cmb;
         let cmb_in_z = (cos_m * uz + sin_m * tz) * r_cmb;
 
         let theta_exit_rad = delta_rad - theta_m_rad;
-        let (sin_ex, cos_ex) = (theta_exit_rad.sin(), theta_exit_rad.cos());
+        let (sin_ex, cos_ex) = (fast_sin(theta_exit_rad), fast_cos(theta_exit_rad));
         let cmb_out_x = (cos_ex * ux + sin_ex * tx) * r_cmb;
         let cmb_out_y = (cos_ex * uy + sin_ex * ty) * r_cmb;
         let cmb_out_z = (cos_ex * uz + sin_ex * tz) * r_cmb;
@@ -203,26 +205,26 @@ pub fn trace_pseudo_bending_prem_slab(
 
         for i in 0..n1 {
             let frac = (i as f32) / (n1 as f32);
-            out_nodes_xyz[i * 3 + 0] = x0 + frac * (cmb_in_x - x0);
+            out_nodes_xyz[i * 3] = x0 + frac * (cmb_in_x - x0);
             out_nodes_xyz[i * 3 + 1] = y0 + frac * (cmb_in_y - y0);
             out_nodes_xyz[i * 3 + 2] = z0 + frac * (cmb_in_z - z0);
         }
         for i in 0..n2 {
             let frac = if n2 > 1 { (i as f32) / ((n2 - 1) as f32) } else { 0.0 };
-            out_nodes_xyz[(n1 + i) * 3 + 0] = cmb_in_x + frac * (cmb_out_x - cmb_in_x);
+            out_nodes_xyz[(n1 + i) * 3] = cmb_in_x + frac * (cmb_out_x - cmb_in_x);
             out_nodes_xyz[(n1 + i) * 3 + 1] = cmb_in_y + frac * (cmb_out_y - cmb_in_y);
             out_nodes_xyz[(n1 + i) * 3 + 2] = cmb_in_z + frac * (cmb_out_z - cmb_in_z);
         }
         for i in 0..n3 {
             let frac = ((i + 1) as f32) / (n3 as f32);
-            out_nodes_xyz[(n1 + n2 + i) * 3 + 0] = cmb_out_x + frac * (x1 - cmb_out_x);
+            out_nodes_xyz[(n1 + n2 + i) * 3] = cmb_out_x + frac * (x1 - cmb_out_x);
             out_nodes_xyz[(n1 + n2 + i) * 3 + 1] = cmb_out_y + frac * (y1 - cmb_out_y);
             out_nodes_xyz[(n1 + n2 + i) * 3 + 2] = cmb_out_z + frac * (z1 - cmb_out_z);
         }
     } else {
         for i in 0..n {
             let frac = (i as f32) / ((n - 1) as f32);
-            out_nodes_xyz[i * 3 + 0] = x0 + frac * (x1 - x0);
+            out_nodes_xyz[i * 3] = x0 + frac * (x1 - x0);
             out_nodes_xyz[i * 3 + 1] = y0 + frac * (y1 - y0);
             out_nodes_xyz[i * 3 + 2] = z0 + frac * (z1 - z0);
         }
@@ -231,15 +233,15 @@ pub fn trace_pseudo_bending_prem_slab(
     // 2. 8 iterations of 3-point pseudo-bending
     for _iter in 0..8 {
         for k in 1..(n - 1) {
-            let km1_x = out_nodes_xyz[(k - 1) * 3 + 0];
+            let km1_x = out_nodes_xyz[(k - 1) * 3];
             let km1_y = out_nodes_xyz[(k - 1) * 3 + 1];
             let km1_z = out_nodes_xyz[(k - 1) * 3 + 2];
 
-            let kp1_x = out_nodes_xyz[(k + 1) * 3 + 0];
+            let kp1_x = out_nodes_xyz[(k + 1) * 3];
             let kp1_y = out_nodes_xyz[(k + 1) * 3 + 1];
             let kp1_z = out_nodes_xyz[(k + 1) * 3 + 2];
 
-            let cur_x = out_nodes_xyz[k * 3 + 0];
+            let cur_x = out_nodes_xyz[k * 3];
             let cur_y = out_nodes_xyz[k * 3 + 1];
             let cur_z = out_nodes_xyz[k * 3 + 2];
 
@@ -247,7 +249,7 @@ pub fn trace_pseudo_bending_prem_slab(
             let tx = kp1_x - km1_x;
             let ty = kp1_y - km1_y;
             let tz = kp1_z - km1_z;
-            let chord_l = (tx * tx + ty * ty + tz * tz).sqrt().max(1e-4);
+            let chord_l = fast_sqrt(tx * tx + ty * ty + tz * tz).max(1e-4);
             let hat_tx = tx / chord_l;
             let hat_ty = ty / chord_l;
             let hat_tz = tz / chord_l;
@@ -281,15 +283,15 @@ pub fn trace_pseudo_bending_prem_slab(
 
             // Perturbation: d_k = - (L^2 / 8) * perp
             let factor = - (chord_l * chord_l) / 8.0;
-            let dx = (factor * perp_x).max(-15.0).min(15.0);
-            let dy = (factor * perp_y).max(-15.0).min(15.0);
-            let dz = (factor * perp_z).max(-15.0).min(15.0);
+            let dx = (factor * perp_x).clamp(-15.0, 15.0);
+            let dy = (factor * perp_y).clamp(-15.0, 15.0);
+            let dz = (factor * perp_z).clamp(-15.0, 15.0);
 
             let mid_x = 0.5 * (km1_x + kp1_x);
             let mid_y = 0.5 * (km1_y + kp1_y);
             let mid_z = 0.5 * (km1_z + kp1_z);
 
-            out_nodes_xyz[k * 3 + 0] = mid_x + dx;
+            out_nodes_xyz[k * 3] = mid_x + dx;
             out_nodes_xyz[k * 3 + 1] = mid_y + dy;
             out_nodes_xyz[k * 3 + 2] = mid_z + dz;
         }
@@ -298,15 +300,15 @@ pub fn trace_pseudo_bending_prem_slab(
     // 3. Integrate travel time along discretized path
     let mut total_t = 0.0f32;
     for k in 0..(n - 1) {
-        let x_a = out_nodes_xyz[k * 3 + 0];
+        let x_a = out_nodes_xyz[k * 3];
         let y_a = out_nodes_xyz[k * 3 + 1];
         let z_a = out_nodes_xyz[k * 3 + 2];
 
-        let x_b = out_nodes_xyz[(k + 1) * 3 + 0];
+        let x_b = out_nodes_xyz[(k + 1) * 3];
         let y_b = out_nodes_xyz[(k + 1) * 3 + 1];
         let z_b = out_nodes_xyz[(k + 1) * 3 + 2];
 
-        let seg_len = ((x_b - x_a) * (x_b - x_a) + (y_b - y_a) * (y_b - y_a) + (z_b - z_a) * (z_b - z_a)).sqrt();
+        let seg_len = fast_sqrt((x_b - x_a) * (x_b - x_a) + (y_b - y_a) * (y_b - y_a) + (z_b - z_a) * (z_b - z_a));
         let mid_x = 0.5 * (x_a + x_b);
         let mid_y = 0.5 * (y_a + y_b);
         let mid_z = 0.5 * (z_a + z_b);
@@ -328,7 +330,7 @@ pub fn compute_so6_kelvin_mandel_rotor(r_so3: &[f32; 9], out_rotor_so6: &mut [f3
     let r10 = r_so3[3]; let r11 = r_so3[4]; let r12 = r_so3[5];
     let r20 = r_so3[6]; let r21 = r_so3[7]; let r22 = r_so3[8];
 
-    let sq2 = 1.4142135623730951f32;
+    let sq2 = core::f32::consts::SQRT_2;
 
     // Row 0: sigma_11
     out_rotor_so6[0]  = r00 * r00;
@@ -405,9 +407,7 @@ pub fn invert_4x4_sym(a: &[f32; 16], out_inv: &mut [f32; 16]) -> bool {
         }
         if pivot_row != p {
             for col in 0..8 {
-                let tmp = mat[p * 8 + col];
-                mat[p * 8 + col] = mat[pivot_row * 8 + col];
-                mat[pivot_row * 8 + col] = tmp;
+                mat.swap(p * 8 + col, pivot_row * 8 + col);
             }
         }
 
@@ -449,9 +449,9 @@ pub fn invert_cluster_hypocenter(
     let mut cluster_picks: [usize; 32] = [0; 32];
     let mut n_cpicks = 0usize;
 
-    for i in 0..num_picks.min(MAX_PICKS) {
-        if picks[i].active != 0 {
-            let s_idx = picks[i].station_idx as usize;
+    for (i, pick) in picks.iter().enumerate().take(num_picks.min(MAX_PICKS)) {
+        if pick.active != 0 {
+            let s_idx = pick.station_idx as usize;
             if s_idx < MAX_STATIONS && stations[s_idx].active != 0 {
                 cluster_picks[n_cpicks] = i;
                 n_cpicks += 1;
@@ -479,20 +479,20 @@ pub fn invert_cluster_hypocenter(
     let cent_lon = sum_lon / (n_cpicks as f32);
 
     let mut max_st_dist_deg = 0.0f32;
-    let cos_lat = (cent_lat * DEG_TO_RAD).cos().abs().max(0.1);
+    let cos_lat = fast_cos(cent_lat * DEG_TO_RAD).abs().max(0.1);
     for i in 0..n_cpicks {
         let s_idx = picks[cluster_picks[i]].station_idx as usize;
         let dlat = stations[s_idx].lat_deg - cent_lat;
         let dlon = (stations[s_idx].lon_deg - cent_lon) * cos_lat;
-        let dist_deg = (dlat * dlat + dlon * dlon).sqrt();
+        let dist_deg = fast_sqrt(dlat * dlat + dlon * dlon);
         if dist_deg > max_st_dist_deg {
             max_st_dist_deg = dist_deg;
         }
     }
-    let aperture_scale_deg = (max_st_dist_deg * 1.2).max(0.2).min(2.5);
+    let aperture_scale_deg = (max_st_dist_deg * 1.2).clamp(0.2, 2.5);
 
     let k_seeds = 32usize;
-    let golden_ratio = 1.61803398875f32;
+    let golden_ratio = 1.618_034_f32;
     let test_depths = [0.5f32, 2.0, 5.0, 10.0, 15.0, 25.0, 40.0, 70.0, 150.0, 300.0, 500.0];
 
     let mut best_lat = cent_lat;
@@ -525,8 +525,8 @@ pub fn invert_cluster_hypocenter(
 
             // Simple median approximation
             let mut t0_cand = 0.0f32;
-            for i in 0..n_cpicks {
-                t0_cand += residuals[i];
+            for res in residuals.iter().take(n_cpicks) {
+                t0_cand += *res;
             }
             t0_cand /= n_cpicks as f32;
 
@@ -569,7 +569,7 @@ pub fn invert_cluster_hypocenter(
     let mut cur_depth = best_depth;
     let mut cur_t0 = best_t0;
 
-    let iters = max_iter.max(4).min(20);
+    let iters = max_iter.clamp(4, 20);
     let mut cov_4x4 = [0.0f32; 16];
     let mut final_rms = 0.0f32;
 
@@ -603,12 +603,12 @@ pub fn invert_cluster_hypocenter(
             };
 
             // Partial derivatives
-            let slant_km = (dist_km * dist_km + cur_depth * cur_depth).sqrt().max(1.0);
+            let slant_km = fast_sqrt(dist_km * dist_km + cur_depth * cur_depth).max(1.0);
             let vp = if dist_km < 800.0 { 6.8 } else { 9.0 };
             let v = if p.phase_type == 1 { vp / 1.732 } else { vp };
 
             let d_lat_km = (cur_lat - st_lat) * 111.19 / (slant_km * v);
-            let d_lon_km = (cur_lon - st_lon) * 111.19 * (cur_lat * DEG_TO_RAD).cos() / (slant_km * v);
+            let d_lon_km = (cur_lon - st_lon) * 111.19 * fast_cos(cur_lat * DEG_TO_RAD) / (slant_km * v);
             let d_depth_km = cur_depth / (slant_km * v);
             let d_t0 = 1.0f32;
 
@@ -643,20 +643,20 @@ pub fn invert_cluster_hypocenter(
         }
 
         // Update parameters with step damping
-        let step_lat_deg = (dm[0] / 111.19).max(-0.5).min(0.5);
-        let cos_lat = (cur_lat * DEG_TO_RAD).cos().abs().max(0.1);
-        let step_lon_deg = (dm[1] / (111.19 * cos_lat)).max(-0.5).min(0.5);
-        let step_depth_km = dm[2].max(-20.0).min(20.0);
-        let step_t0_s = (dm[3] as f64).max(-5.0).min(5.0);
+        let step_lat_deg = (dm[0] / 111.19).clamp(-0.5, 0.5);
+        let cos_lat = fast_cos(cur_lat * DEG_TO_RAD).abs().max(0.1);
+        let step_lon_deg = (dm[1] / (111.19 * cos_lat)).clamp(-0.5, 0.5);
+        let step_depth_km = dm[2].clamp(-20.0, 20.0);
+        let step_t0_s = (dm[3] as f64).clamp(-5.0, 5.0);
 
         cur_lat += step_lat_deg;
         cur_lon += step_lon_deg;
         // Physical depth bound: permit sub-kilometer shallow events in [0.1, 700.0] km
-        cur_depth = (cur_depth + step_depth_km).max(0.1).min(700.0);
+        cur_depth = (cur_depth + step_depth_km).clamp(0.1, 700.0);
         cur_t0 += step_t0_s;
 
         cov_4x4 = inv_mat;
-        final_rms = (sum_sq_err / (n_cpicks as f32)).sqrt();
+        final_rms = fast_sqrt(sum_sq_err / (n_cpicks as f32));
 
         if dm[0].abs() < 0.05 && dm[1].abs() < 0.05 && dm[2].abs() < 0.1 {
             break;
@@ -665,17 +665,17 @@ pub fn invert_cluster_hypocenter(
 
     // 4. Calculate posterior analytical confidence ellipsoids
     let sigma_hat_sq = (final_rms * final_rms).max(0.01);
-    for i in 0..16 {
-        cov_4x4[i] *= sigma_hat_sq;
+    for cov in &mut cov_4x4 {
+        *cov *= sigma_hat_sq;
     }
 
     let var_lat_km = cov_4x4[0].max(0.01);
     let var_lon_km = cov_4x4[5].max(0.01);
     let var_depth_km = cov_4x4[10].max(0.01);
 
-    let semi_major = (var_lat_km.max(var_lon_km)).sqrt();
-    let semi_minor = (var_lat_km.min(var_lon_km)).sqrt();
-    let depth_err = var_depth_km.sqrt();
+    let semi_major = fast_sqrt(var_lat_km.max(var_lon_km));
+    let semi_minor = fast_sqrt(var_lat_km.min(var_lon_km));
+    let depth_err = fast_sqrt(var_depth_km);
 
     // 5. Multi-band magnitude estimation
     let mut sum_amp0 = 0.0f32;
@@ -693,14 +693,14 @@ pub fn invert_cluster_hypocenter(
         sum_amp2 += p.amplitude_m.max(1e-7) * 0.8;
     }
     dist_med /= n_cpicks as f32;
-    let log_dist = (dist_med.max(10.0)).log10();
+    let log_dist = fast_log10(dist_med.max(10.0));
 
-    let mag_def = ((sum_amp0 / n_cpicks as f32).log10() + 1.11 * log_dist + 0.00189 * dist_med + 4.5)
-        .max(1.0).min(9.5);
-    let mag_low = ((sum_amp1 / n_cpicks as f32).log10() + 1.11 * log_dist + 0.00189 * dist_med + 4.3)
-        .max(1.0).min(9.5);
-    let mag_ultra = ((sum_amp2 / n_cpicks as f32).log10() + 1.11 * log_dist + 0.00189 * dist_med + 4.1)
-        .max(1.0).min(9.5);
+    let mag_def = (fast_log10(sum_amp0 / n_cpicks as f32) + 1.11 * log_dist + 0.00189 * dist_med + 4.5)
+        .clamp(1.0, 9.5);
+    let mag_low = (fast_log10(sum_amp1 / n_cpicks as f32) + 1.11 * log_dist + 0.00189 * dist_med + 4.3)
+        .clamp(1.0, 9.5);
+    let mag_ultra = (fast_log10(sum_amp2 / n_cpicks as f32) + 1.11 * log_dist + 0.00189 * dist_med + 4.1)
+        .clamp(1.0, 9.5);
 
     out_hypo.lat_deg = cur_lat;
     out_hypo.lon_deg = cur_lon;

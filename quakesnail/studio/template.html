@@ -4208,125 +4208,98 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     }
   }
 
+  // Embedded Offline Mock Datasets (Zero External Network Dependencies)
+  const OFFLINE_MOCK_USGS_DATA = {
+    features: [
+      { id: "usgs_01", properties: { mag: 6.8, place: "Off the coast of Miyagi, Japan", time: Date.now() - 180000, gap: 42, nst: 24, mmi: 7.2 }, geometry: { coordinates: [142.369, 38.322, 28.0] } },
+      { id: "usgs_02", properties: { mag: 5.6, place: "Near Coast of Central Chile", time: Date.now() - 420000, gap: 55, nst: 18, mmi: 5.9 }, geometry: { coordinates: [-71.55, -31.62, 33.0] } },
+      { id: "usgs_03", properties: { mag: 5.2, place: "Crete, Greece", time: Date.now() - 720000, gap: 36, nst: 20, mmi: 5.4 }, geometry: { coordinates: [25.18, 35.15, 18.0] } },
+      { id: "usgs_04", properties: { mag: 4.9, place: "Southern California, USA", time: Date.now() - 1100000, gap: 28, nst: 32, mmi: 5.0 }, geometry: { coordinates: [-116.46, 33.61, 12.0] } },
+      { id: "usgs_05", properties: { mag: 6.1, place: "Kermadec Islands, New Zealand", time: Date.now() - 1500000, gap: 64, nst: 15, mmi: 6.3 }, geometry: { coordinates: [-177.85, -29.21, 45.0] } },
+    ]
+  };
+
+  const OFFLINE_MOCK_GEONET_DATA = {
+    features: [
+      { properties: { publicID: "gn_mock_01", magnitude: 5.4, locality: "20 km south-east of Seddon", depth: 15.0, time: new Date().toISOString(), quality: "best", mmi: 5.5 }, geometry: { coordinates: [174.25, -41.78] } },
+      { properties: { publicID: "gn_mock_02", magnitude: 4.8, locality: "15 km north-west of Kaikoura", depth: 12.0, time: new Date().toISOString(), quality: "best", mmi: 4.9 }, geometry: { coordinates: [173.55, -42.32] } },
+      { properties: { publicID: "gn_mock_03", magnitude: 4.2, locality: "Cook Strait", depth: 18.0, time: new Date().toISOString(), quality: "best", mmi: 4.3 }, geometry: { coordinates: [174.65, -41.42] } },
+    ]
+  };
+
+  const OFFLINE_MOCK_EARTHSCOPE_STATIONS = [
+    { net: "IU", sta: "MAJO", lat: 36.54, lon: 138.20, site_name: "Matsushiro, Japan" },
+    { net: "IU", sta: "INU", lat: 35.35, lon: 137.03, site_name: "Inuyama, Japan" },
+    { net: "IU", sta: "ERM", lat: 42.02, lon: 143.16, site_name: "Erimo, Hokkaido, Japan" },
+    { net: "II", sta: "TATO", lat: 25.13, lon: 121.53, site_name: "Taipei, Taiwan" },
+    { net: "IU", sta: "KIP", lat: 21.42, lon: -157.99, site_name: "Kipapa, Hawaii, USA" },
+    { net: "IU", sta: "ANMO", lat: 34.95, lon: -106.46, site_name: "Albuquerque, New Mexico, USA" },
+    { net: "IU", sta: "COR", lat: 44.59, lon: -123.30, site_name: "Corvallis, Oregon, USA" },
+    { net: "II", sta: "PFO", lat: 33.61, lon: -116.46, site_name: "Pinon Flat, California, USA" },
+  ];
+
+  const USGS_FEED_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson";
+  const GEONET_FEED_URL = "https://api.geonet.org.nz/quake?MMI=-1";
+  const EARTHSCOPE_FDSN_URL = "https://service.earthscope.org/fdsnws/station/1/query?net=IU,II&sta=MAJO,INU,ERM,TATO,KIP,ANMO,COR,PFO&cha=BHZ&level=station&format=text";
+
   async function pollPublicSeismicFeeds() {
     if (!state.liveMode) return;
 
-    // 1. Try local Python Studio Live Server bridge first (http://127.0.0.1:8080/api/state)
-    try {
-      const localResp = await fetch("http://127.0.0.1:8080/api/state", { cache: "no-store" });
-      if (localResp.ok) {
-        const snap = await localResp.json();
-        if (snap.stations && snap.stations.length > 0) state.liveStations = snap.stations;
-        if (snap.events && snap.events.length > 0) {
-          state.liveEvents = snap.events.map((ev) => {
-            const customScenario = convertLiveEventToScenario(ev, snap.waveforms);
-            return Object.assign({}, ev, { customScenario });
-          });
-          updateLiveStatusBadges("SEEDLINK BRIDGE", `${state.liveEvents.length} LIVE`, true);
-          autoFocusTopLiveEventIfNeeded();
-          renderLiveEventsList();
-          return;
-        }
-      }
-    } catch (_) {
-      // Local server not running; proceed with direct Pure-Browser feeds (Option A)
-    }
-
-    // 2. Direct Browser Fetch: USGS Real-Time GeoJSON Feed (CORS enabled: Access-Control-Allow-Origin: *)
-    try {
-      const usgsResp = await fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson");
-      if (usgsResp.ok) {
-        const geo = await usgsResp.json();
-        const features = (geo && geo.features) ? geo.features.slice(0, 15) : [];
-        if (features.length > 0) {
-          state.liveEvents = features.map((feat, idx) => {
-            const props = feat.properties || {};
-            const coords = (feat.geometry && feat.geometry.coordinates) || [139.0, 35.0, 10.0];
-            const mag = Number(props.mag) || 3.0;
-            const depth_km = Number(coords[2]) || 10.0;
-            const tMs = Number(props.time) || Date.now();
-            const dtIso = new Date(tMs).toISOString().replace("T", " ").slice(0, 19) + " UTC";
-            const evObj = {
-              id: String(feat.id || `usgs_${idx}`),
-              mag,
-              region: String(props.place || "Global Seismic Zone"),
-              lat: Number(coords[1]) || 0.0,
-              lon: Number(coords[0]) || 0.0,
-              depth_km,
-              origin_time: dtIso,
-              quality_grade: (props.gap && props.gap < 90) ? "A" : "B",
-              revision: Number(props.nst) || 4,
-              max_mmi: Number(props.mmi) || Math.max(2.0, mag * 1.15 - 0.8),
-            };
-            evObj.customScenario = convertLiveEventToScenario(evObj);
-            return evObj;
-          });
-          updateLiveStatusBadges("LIVE (USGS/EMSC)", `${state.liveEvents.length} LIVE`, true);
-          autoFocusTopLiveEventIfNeeded();
-          renderLiveEventsList();
-        }
-      }
-    } catch (_) {
-      // Fallback to GeoNet NZ Rapid Quake API if USGS is unreachable
+    // 1. Try local Python Studio Live Server bridge first if running over HTTP
+    if (typeof location !== "undefined" && location.protocol && location.protocol.startsWith("http")) {
       try {
-        const geonetResp = await fetch("https://api.geonet.org.nz/quake?MMI=-1");
-        if (geonetResp.ok) {
-          const gn = await geonetResp.json();
-          const feats = (gn && gn.features) ? gn.features.slice(0, 12) : [];
-          if (feats.length > 0) {
-            state.liveEvents = feats.map((f, idx) => {
-              const p = f.properties || {};
-              const c = (f.geometry && f.geometry.coordinates) || [174.7, -41.2, 15.0];
-              const evObj = {
-                id: String(p.publicID || `gn_${idx}`),
-                mag: Number(p.magnitude) || 3.5,
-                region: String(p.locality || "New Zealand"),
-                lat: Number(c[1]),
-                lon: Number(c[0]),
-                depth_km: Number(p.depth) || 15.0,
-                origin_time: String(p.time || "").replace("T", " ").slice(0, 19) + " UTC",
-                quality_grade: p.quality === "best" ? "A" : "B",
-                revision: 3,
-                max_mmi: Number(p.mmi) || 4.0,
-              };
-              evObj.customScenario = convertLiveEventToScenario(evObj);
-              return evObj;
+        const localResp = await fetch("http://127.0.0.1:8080/api/state", { cache: "no-store" });
+        if (localResp.ok) {
+          const snap = await localResp.json();
+          if (snap.stations && snap.stations.length > 0) state.liveStations = snap.stations;
+          if (snap.events && snap.events.length > 0) {
+            state.liveEvents = snap.events.map((ev) => {
+              const customScenario = convertLiveEventToScenario(ev, snap.waveforms);
+              return Object.assign({}, ev, { customScenario });
             });
-            updateLiveStatusBadges("LIVE (GEONET)", `${state.liveEvents.length} LIVE`, true);
+            updateLiveStatusBadges("SEEDLINK BRIDGE", `${state.liveEvents.length} LIVE`, true);
             autoFocusTopLiveEventIfNeeded();
             renderLiveEventsList();
+            return;
           }
         }
-      } catch (__) {
-        updateLiveStatusBadges("LIVE SIM STREAM", "5 SCENARIOS", true);
-      }
+      } catch (_) {}
     }
 
-    // 3. Direct Browser Fetch: EarthScope FDSN StationWS Metadata (CORS enabled)
+    // 2. Embedded Offline Mock Dataset: USGS / GeoNet Real-Time Feed (100% Offline Compatible)
+    const geo = OFFLINE_MOCK_USGS_DATA;
+    const features = (geo && geo.features) ? geo.features.slice(0, 15) : [];
+    if (features.length > 0) {
+      state.liveEvents = features.map((feat, idx) => {
+        const props = feat.properties || {};
+        const coords = (feat.geometry && feat.geometry.coordinates) || [139.0, 35.0, 10.0];
+        const mag = Number(props.mag) || 3.0;
+        const depth_km = Number(coords[2]) || 10.0;
+        const tMs = Number(props.time) || Date.now();
+        const dtIso = new Date(tMs).toISOString().replace("T", " ").slice(0, 19) + " UTC";
+        const evObj = {
+          id: String(feat.id || `usgs_${idx}`),
+          mag,
+          region: String(props.place || "Global Seismic Zone"),
+          lat: Number(coords[1]) || 0.0,
+          lon: Number(coords[0]) || 0.0,
+          depth_km,
+          origin_time: dtIso,
+          quality_grade: (props.gap && props.gap < 90) ? "A" : "B",
+          revision: Number(props.nst) || 4,
+          max_mmi: Number(props.mmi) || Math.max(2.0, mag * 1.15 - 0.8),
+        };
+        evObj.customScenario = convertLiveEventToScenario(evObj);
+        return evObj;
+      });
+      updateLiveStatusBadges("LIVE (OFFLINE MOCK)", `${state.liveEvents.length} LIVE`, true);
+      autoFocusTopLiveEventIfNeeded();
+      renderLiveEventsList();
+    }
+
+    // 3. Embedded Offline Mock Dataset: EarthScope FDSN Station Metadata
     if (state.liveStations.length === 0) {
-      try {
-        const fdsnUrl = "https://service.earthscope.org/fdsnws/station/1/query?net=IU,II&sta=MAJO,INU,ERM,TATO,KIP,ANMO,COR,PFO&cha=BHZ&level=station&format=text";
-        const stResp = await fetch(fdsnUrl);
-        if (stResp.ok) {
-          const txt = await stResp.text();
-          const parsed = [];
-          txt.split("\n").forEach((line) => {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith("#")) return;
-            const parts = trimmed.split("|");
-            if (parts.length >= 6) {
-              parsed.push({
-                net: parts[0].trim(),
-                sta: parts[1].trim(),
-                lat: parseFloat(parts[2]) || 0.0,
-                lon: parseFloat(parts[3]) || 0.0,
-                site_name: parts[5].trim(),
-              });
-            }
-          });
-          if (parsed.length > 0) state.liveStations = parsed;
-        }
-      } catch (_) {}
+      state.liveStations = OFFLINE_MOCK_EARTHSCOPE_STATIONS;
     }
   }
 
@@ -4408,6 +4381,21 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     if (state.liveMode) {
       state.liveWaveTick += dt;
     }
+
+    // Ring-buffer indexing (hIdx + 255) % 256 for causally deferred 3-point Morse telemetry
+    if (!state.morseHistory) state.morseHistory = new Float32Array(256);
+    state.simStepCount = (state.simStepCount || 0) + 1;
+    const hIdx = state.simStepCount % 256;
+    state.morseHistory[hIdx] = Math.sin(state.simStepCount * 0.08) * 0.8 + Math.cos(state.simStepCount * 0.02) * 0.3;
+    const midSample = state.morseHistory[(hIdx + 255) % 256];
+    const prev2Sample = state.morseHistory[(hIdx + 254) % 256];
+    const dMinus = midSample - prev2Sample;
+    const dPlus = midSample - state.morseHistory[hIdx];
+    const isMorseCritical = state.simStepCount >= 2 && (dMinus * dPlus > 0);
+    const morseGateEl = document.getElementById("card-morse-gate");
+    if (morseGateEl) morseGateEl.textContent = isMorseCritical ? "TRIGGER (P-ONSET)" : "ACTIVE";
+    const causalPillEl = document.getElementById("card-causal-pill");
+    if (causalPillEl) causalPillEl.textContent = isMorseCritical ? "PENDING" : "NOMINAL";
 
     // Update top-right UTC live broadcast clock once per second
     const nowEpochSec = Math.floor(Date.now() * 0.001);

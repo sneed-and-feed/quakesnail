@@ -12,22 +12,30 @@
 //! 9. Coarse-to-fine Fibonacci sphere seeding + damped Huber-IRLS without 10 km depth collapse.
 //! 10. Cache-resident flat static arena strictly <= 2_097_152 bytes (< 2.0 MB SRAM limit).
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![allow(dead_code)]
 #![allow(unused_unsafe)]
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(not(feature = "std"), not(test)))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(not(feature = "std"), not(test), not(windows), not(target_arch = "wasm32")))]
+#[no_mangle]
+pub extern "C" fn rust_eh_personality() {}
+
+#[cfg(any(feature = "std", test))]
 extern crate std;
 
 pub mod associate;
 pub mod filter;
 pub mod invert;
+pub mod math;
+
+pub use math::*;
+
 
 // --- Constants ---
 pub const MAX_STATIONS: usize = 256;
@@ -171,20 +179,79 @@ pub struct QuakeSnailArena {
     pub scratch_buffer: [u8; 65536],
 }
 
+impl StationSlot {
+    pub const EMPTY: Self = Self {
+        station_id: 0,
+        lat_deg: 0.0,
+        lon_deg: 0.0,
+        alt_m: 0.0,
+        active: 0,
+    };
+}
+
+impl PickSlot {
+    pub const EMPTY: Self = Self {
+        pick_id: 0,
+        station_idx: 0,
+        phase_type: 0,
+        arrival_time_s: 0.0,
+        snr: 0.0,
+        amplitude_m: 0.0,
+        period_s: 0.0,
+        classification: 0,
+        active: 0,
+        _pad: 0,
+    };
+}
+
+impl ClusterSlot {
+    pub const EMPTY: Self = Self {
+        cluster_id: 0,
+        lat_deg: 0.0,
+        lon_deg: 0.0,
+        depth_km: 0.0,
+        origin_time_s: 0.0,
+        mag_default: 0.0,
+        mag_low: 0.0,
+        mag_ultralow: 0.0,
+        num_picks: 0,
+        residual_rms_s: 0.0,
+        active: 0,
+        _pad: 0,
+    };
+}
+
+impl StationChannelState {
+    pub const EMPTY: Self = Self {
+        sta: 0.0,
+        lta: 0.0,
+        ratio: 0.0,
+        gate_state: 0,
+        pending_val: 0.0,
+        last_sample: 0.0,
+        prev_sample: 0.0,
+        sample_rate_hz: 50.0,
+        d1: 0.0,
+        d2: 0.0,
+        noise_var: 1.0,
+        impulse_counter: 0,
+    };
+}
+
 // Static Footprint Verification (< 2.0 MB SRAM limit)
 const _: () = assert!(core::mem::size_of::<QuakeSnailArena>() <= 2_097_152);
 
-impl Default for QuakeSnailArena {
-    fn default() -> Self {
+impl QuakeSnailArena {
+    pub const fn new() -> Self {
         Self {
-            stations: [StationSlot::default(); MAX_STATIONS],
+            stations: [StationSlot::EMPTY; MAX_STATIONS],
             num_stations: 0,
             waveforms: [0.0f32; MAX_STATIONS * NUM_BANDS * WAVEFORM_RING_CAPACITY],
             ring_heads: [0usize; MAX_STATIONS],
-            channel_states: [[StationChannelState::default(); NUM_BANDS]; MAX_STATIONS],
-            picks: [PickSlot::default(); MAX_PICKS],
+            channel_states: [[StationChannelState::EMPTY; NUM_BANDS]; MAX_STATIONS],
+            picks: [PickSlot::EMPTY; MAX_PICKS],
             num_picks: 0,
-            clusters: [ClusterSlot::default(); MAX_CLUSTERS],
+            clusters: [ClusterSlot::EMPTY; MAX_CLUSTERS],
             num_clusters: 0,
             ray_nodes_xyz: [0.0f32; MAX_RAYS * RAY_DISCRETIZATION * 3],
             travel_times: [0.0f32; MAX_RAYS],
@@ -197,6 +264,14 @@ impl Default for QuakeSnailArena {
         }
     }
 }
+
+impl Default for QuakeSnailArena {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+static mut GLOBAL_ARENA: QuakeSnailArena = QuakeSnailArena::new();
 
 impl QuakeSnailArena {
     pub fn reset(&mut self) {
@@ -223,29 +298,32 @@ impl QuakeSnailArena {
 
 // --- C-ABI Extern "C" Interface ---
 
+/// Returns a pointer to the static pre-allocated `QuakeSnailArena` (< 2.0 MB SRAM) with 0 dynamic heap allocations.
+///
+/// # Safety
+/// Caller must ensure that when no longer needed, the returned pointer is passed to `quakesnail_arena_free`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_arena_new() -> *mut QuakeSnailArena {
-    #[cfg(feature = "std")]
-    {
-        let boxed = std::boxed::Box::new(QuakeSnailArena::default());
-        std::boxed::Box::into_raw(boxed)
-    }
-    #[cfg(not(feature = "std"))]
-    {
-        core::ptr::null_mut()
-    }
+    let ptr = &raw mut GLOBAL_ARENA;
+    (*ptr).reset();
+    ptr
 }
 
+/// Deallocates/resets a `QuakeSnailArena` instance previously allocated by `quakesnail_arena_new`.
+///
+/// # Safety
+/// If non-null, `arena` must be a valid pointer obtained from `quakesnail_arena_new`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_arena_free(arena: *mut QuakeSnailArena) {
-    #[cfg(feature = "std")]
-    {
-        if !arena.is_null() {
-            let _ = std::boxed::Box::from_raw(arena);
-        }
+    if !arena.is_null() && arena == &raw mut GLOBAL_ARENA {
+        (*arena).reset();
     }
 }
 
+/// Resets the internal state and counters of a `QuakeSnailArena`.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_arena_reset(arena: *mut QuakeSnailArena) {
     if let Some(a) = arena.as_mut() {
@@ -253,11 +331,19 @@ pub unsafe extern "C" fn quakesnail_arena_reset(arena: *mut QuakeSnailArena) {
     }
 }
 
+/// Returns the total byte size of `QuakeSnailArena`.
+///
+/// # Safety
+/// This function does not dereference any pointers and is safe to call from any caller.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_get_arena_size_bytes() -> usize {
     core::mem::size_of::<QuakeSnailArena>()
 }
 
+/// Registers a new seismic station slot in the arena.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_register_station(
     arena: *mut QuakeSnailArena,
@@ -289,6 +375,11 @@ pub unsafe extern "C" fn quakesnail_register_station(
     idx as i32
 }
 
+/// Pushes a single raw sample to the station ring buffer and updates channel state.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
+/// `out_pick`, if non-null, must point to valid, writable memory for a `PickSlot`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_push_sample(
     arena: *mut QuakeSnailArena,
@@ -376,6 +467,11 @@ pub unsafe extern "C" fn quakesnail_push_sample(
     emitted_class
 }
 
+/// Processes a slice of waveform samples for a given station and band.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
+/// `samples` must point to an array of at least `count` readable contiguous `f32` elements.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_process_station_waveform(
     arena: *mut QuakeSnailArena,
@@ -415,6 +511,10 @@ pub unsafe extern "C" fn quakesnail_process_station_waveform(
     last_class
 }
 
+/// Associates recorded phase picks into event clusters.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_associate_phases(
     arena: *mut QuakeSnailArena,
@@ -434,6 +534,12 @@ pub unsafe extern "C" fn quakesnail_associate_phases(
     )
 }
 
+/// Associates phase wavefronts using an optional custom cascade tensor.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
+/// If non-null, `w_rec` must point to `CASCADE_DIM^3` contiguous readable `f32` elements.
+/// If non-null, `out_cluster` must point to valid writable memory for a `ClusterSlot`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_associate_wavefronts(
     arena: *mut QuakeSnailArena,
@@ -462,6 +568,11 @@ pub unsafe extern "C" fn quakesnail_associate_wavefronts(
     res
 }
 
+/// Inverts the hypocenter for the specified cluster.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
+/// `out_hypo` must point to valid writable memory for a `HypocenterResult`.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_invert_hypocenter(
     arena: *mut QuakeSnailArena,
@@ -486,6 +597,12 @@ pub unsafe extern "C" fn quakesnail_invert_hypocenter(
     )
 }
 
+/// Inverts the hypocenter using damped Huber-IRLS.
+///
+/// # Safety
+/// `arena` must be a valid, aligned, non-null pointer to an initialized `QuakeSnailArena`.
+/// If non-null, `out_lat_lon_depth_time` must point to at least 4 writable `f32` elements.
+/// If non-null, `out_covariance_3x3` must point to at least 9 writable `f32` elements.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_invert_hypocenter_huber(
     arena: *mut QuakeSnailArena,
@@ -538,6 +655,12 @@ pub unsafe extern "C" fn quakesnail_invert_hypocenter_huber(
     ret
 }
 
+/// Computes 3D pseudo-bending raytracing across 1D PREM + slab.
+///
+/// # Safety
+/// `src_xyz` and `rcv_xyz` must each point to at least 3 readable `f32` elements.
+/// `out_travel_time` must point to a valid writable `f32`.
+/// If non-null, `out_ray_xyz` must point to at least `num_nodes * 3` writable `f32` elements.
 #[no_mangle]
 pub unsafe extern "C" fn quakesnail_raytrace_prem_slab(
     src_xyz: *const f32,
@@ -578,6 +701,7 @@ pub unsafe extern "C" fn quakesnail_raytrace_prem_slab(
     0
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -609,9 +733,11 @@ mod tests {
     #[test]
     fn test_1_sample_causal_deferral_glint_rejection() {
         let coeffs = filter::BiquadCoeffs::bandpass(2.0, 5.0, 50.0);
-        let mut state = StationChannelState::default();
-        state.sample_rate_hz = 50.0;
-        state.noise_var = 1.0;
+        let mut state = StationChannelState {
+            sample_rate_hz: 50.0,
+            noise_var: 1.0,
+            ..StationChannelState::default()
+        };
 
         // Prime filter with 100 nominal samples
         for _ in 0..100 {
@@ -633,9 +759,11 @@ mod tests {
     #[test]
     fn test_1_sample_causal_deferral_p_wave_onset() {
         let coeffs = filter::BiquadCoeffs::bandpass(2.0, 5.0, 50.0);
-        let mut state = StationChannelState::default();
-        state.sample_rate_hz = 50.0;
-        state.noise_var = 1.0;
+        let mut state = StationChannelState {
+            sample_rate_hz: 50.0,
+            noise_var: 1.0,
+            ..StationChannelState::default()
+        };
 
         for _ in 0..100 {
             filter::process_channel_sample(0.01, &coeffs, &mut state, false);
@@ -679,8 +807,8 @@ mod tests {
     fn test_so6_kelvin_mandel_orthogonality_and_trace() {
         // Create 3D rotation matrix (rotation around Z by 30 deg, X by 45 deg)
         let theta = 30.0f32.to_radians();
-        let cos_t = theta.cos();
-        let sin_t = theta.sin();
+        let cos_t = fast_cos(theta);
+        let sin_t = fast_sin(theta);
         let r_so3 = [
             cos_t, -sin_t, 0.0,
             sin_t,  cos_t, 0.0,

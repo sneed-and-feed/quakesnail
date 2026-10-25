@@ -81,7 +81,7 @@ The test suite spans 8 modular files in `tests/`:
 | **F2** | Beltrami Spike Preservation | ORIGINAL_REQUEST §R2 | `test_picking.py` | 5 | 5 | ✓ | Scenario 5 |
 | **F3** | 3-Point Discrete Morse Gating | ORIGINAL_REQUEST §R2 | `test_picking.py` | 5 | 5 | ✓ | Scenario 2 |
 | **F4** | 1-Sample Causal Deferral Glitch Shield | ORIGINAL_REQUEST §R2 | `test_rust_simd.py`, `test_referee.py` | 5 | 5 | ✓ | Scenario 5 |
-| **F5** | $\mathcal{H}_{\text{clock}} \oplus \mathcal{H}_{\text{nope}}$ Quarantine | ORIGINAL_REQUEST §R2 | `test_picking.py` | 5 | 5 | ✓ | Scenario 1 |
+| **F5** | $\mathcal H_\text{clock} \oplus \mathcal H_\text{nope}$ Quarantine | ORIGINAL_REQUEST §R2 | `test_picking.py` | 5 | 5 | ✓ | Scenario 1 |
 | **F6** | Skew-Symmetric $\mathfrak{so}(C)$ Triad Association | ORIGINAL_REQUEST §R2 | `test_association.py`, `test_formalization.py` | 5 | 5 | ✓ | Scenario 2 |
 | **F7** | Anti-Cluster Stealing & S-Wave Protection | ORIGINAL_REQUEST §R2 | `test_association.py`, `test_referee.py` | 5 | 5 | ✓ | Scenario 2 |
 | **F8** | Coarse-to-Fine 3D Hypocenter Inversion | ORIGINAL_REQUEST §R2 | `test_inversion.py`, `test_referee.py` | 5 | 5 | ✓ | Scenario 1, 3 |
@@ -104,20 +104,20 @@ The test suite spans 8 modular files in `tests/`:
 
 All 5 mission-critical seismological benchmark scenarios are implemented and validated:
 
-1. **Scenario 1: Subduction Megathrust Event ($M_w 8.2$, depth 24 km)**:
+1. **Scenario 1: Subduction Megathrust Event** ($M_w 8.2$, depth 24 km):
    - Off-coast trench epicenter, 30 coastal stations, 3D ray bending through subducting slab.
    - P-wave and S-wave wavefronts associated without phantom splitting.
    - 3D hypocenter recovered with error $< 2.0$ km.
    - Anisotropic ShakeMap PGA $> 100$ Gal and MMI $\ge 7.0$ near trench.
    - Live countdowns computed for inland municipalities (Tokyo $S$-wave remaining $> 0$).
    - Strict ZERO "people felt" counters verified.
-2. **Scenario 2: Shallow Crustal Strike-Slip Doublet ($M_w 6.4 + M_w 6.2$ within 15s separated by 22 km)**:
+2. **Scenario 2: Shallow Crustal Strike-Slip Doublet** ($M_w 6.4 + M_w 6.2$ within 15s separated by 22 km):
    - Wavefront ring buffer + anti-cluster stealing preserves both clusters.
    - Two distinct hypocenters resolved without pick stealing or cluster merging.
-3. **Scenario 3: Deep Wadati-Benioff Earthquake (depth 450 km, $M_w 7.6$)**:
+3. **Scenario 3: Deep Wadati-Benioff Earthquake** (depth 450 km, $M_w 7.6$):
    - Deep mantle ray paths inverted without crustal collapse (depth maintained $> 400$ km).
    - Broad, moderate surface intensity (PGA $< 250$ Gal, JMA Shindo $< 5$).
-4. **Scenario 4: Teleseismic Core Phases (PKP / PKIKP across antipodal array $\Delta > 140^\circ$)**:
+4. **Scenario 4: Teleseismic Core Phases** (PKP / PKIKP across antipodal array $\Delta > 140^\circ$):
    - South Pacific source to European array ($> 15,000$ km).
    - Earth core refraction travel times ($\approx 1100 - 1400$s) correctly identified as core phases.
 5. **Scenario 5: Volcanic Swarm + SeedLink Glitch Torture Test**:
@@ -155,7 +155,7 @@ All 5 mission-critical seismological benchmark scenarios are implemented and val
 | F2 | Beltrami Spike Preservation | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
 | F3 | 3-Point Discrete Morse Gating | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
 | F4 | 1-Sample Causal Deferral Glitch Shield | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
-| F5 | $\mathcal{H}_{\text{clock}} \oplus \mathcal{H}_{\text{nope}}$ Microseism Quarantine | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
+| F5 | $\mathcal H_\text{clock} \oplus \mathcal H_\text{nope}$ Microseism Quarantine | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
 | F6 | Skew-Symmetric $\mathfrak{so}(C)$ Triad Association | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
 | F7 | Anti-Cluster Stealing & S-Wave Protection | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |
 | F8 | Coarse-to-Fine 3D Hypocenter Inversion | ORIGINAL_REQUEST §R2 | 5 | 5 | ✓ |

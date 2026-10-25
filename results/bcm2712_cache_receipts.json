@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0.0",
+  "verifier": "Broadcom BCM2712 Cortex-A76 Hardware Cache Verifier (scripts/verify_bcm2712_arena.py)",
+  "timestamp_utc": "2026-10-25T18:36:31Z",
+  "hardware_target": "Broadcom BCM2712 (Raspberry Pi 5)",
+  "cpu_core": "ARM Cortex-A76 (ARMv8.2-A)",
+  "bcm2712_cache_geometry": {
+    "hardware_target": "Broadcom BCM2712 (Raspberry Pi 5)",
+    "cpu_core": "ARM Cortex-A76 (ARMv8.2-A)",
+    "clock_mhz": 2400,
+    "line_size_bytes": 64,
+    "l1d": {
+      "size_bytes": 65536,
+      "size_kb": 64,
+      "ways": 4,
+      "sets": 256,
+      "line_size_bytes": 64,
+      "policy": "Pseudo-LRU / Tree-PLRU (4-way)"
+    },
+    "l2": {
+      "size_bytes": 524288,
+      "size_kb": 512,
+      "ways": 8,
+      "sets": 1024,
+      "line_size_bytes": 64,
+      "policy": "Pseudo-LRU (8-way private per core)"
+    },
+    "l3": {
+      "size_bytes": 2097152,
+      "size_mb": 2.0,
+      "ways": 16,
+      "sets": 2048,
+      "line_size_bytes": 64,
+      "policy": "Pseudo-LRU / True LRU (16-way shared LLd)"
+    }
+  },
+  "arenas": {
+    "quakesnail": {
+      "arena_struct": "QuakeSnailArena",
+      "spoke": "quakesnail",
+      "description": "QuakeSnail SIMD Allocation-Free Flat Static Arena (< 2.0 MB SRAM)",
+      "arena_size_bytes": 1757184,
+      "arena_size_kb": 1716.0,
+      "arena_max_ceiling_bytes": 2097152,
+      "arena_alignment_bytes": 64,
+      "total_references": 100000000,
+      "simulation_wall_time_sec": 3.3893,
+      "throughput_refs_per_sec": 29504577.4,
+      "l1d": {
+        "hits": 56214657,
+        "misses": 43785343,
+        "hit_rate_pct": 56.21
+      },
+      "l2": {
+        "hits": 31605438,
+        "misses": 12179905,
+        "hit_rate_pct": 72.18
+      },
+      "l3": {
+        "hits": 12152449,
+        "misses": 27456,
+        "hit_rate_pct": 99.77
+      },
+      "lld_miss_rate_pct": 0.02746,
+      "target_lld_miss_rate_pct": 0.05,
+      "target_achieved": true,
+      "allocator_static_audit": {
+        "audited": true,
+        "target_binary": "c:/Users/x/Documents/antigravity/quakesnail/rust/quakesnail_rs/target/release/quakesnail_rs.dll",
+        "heap_allocators_imported": [],
+        "stepping_symbols_verified": [
+          "quakesnail_register_station",
+          "quakesnail_push_sample",
+          "quakesnail_process_station_waveform",
+          "quakesnail_associate_phases",
+          "quakesnail_invert_hypocenter",
+          "quakesnail_raytrace_prem_slab"
+        ],
+        "stealth_symbols_verified": [
+          "quakesnail_arena_reset",
+          "quakesnail_get_arena_size_bytes",
+          "quakesnail_associate_wavefronts",
+          "quakesnail_invert_hypocenter_huber"
+        ],
+        "dynamic_allocations_detected": 0,
+        "status": "ZERO_DYNAMIC_ALLOCATIONS_VERIFIED"
+      }
+    }
+  },
+  "summary": {
+    "total_arenas_verified": 1,
+    "total_references_simulated": 100000000,
+    "mean_lld_miss_rate_pct": 0.02746,
+    "max_lld_miss_rate_pct": 0.02746,
+    "target_threshold_pct": 0.05,
+    "all_cache_targets_passed": true,
+    "all_allocator_audits_passed": true,
+    "overall_verification_status": "PASS"
+  }
+}

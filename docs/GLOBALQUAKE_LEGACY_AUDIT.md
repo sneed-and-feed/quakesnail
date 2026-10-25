@@ -13,8 +13,15 @@ The investigation revealed significant architectural bottlenecks, concurrency ha
 2. **Phase Association & Clustering (`ClusterAnalysis.java`)**: Lacks joint P/S inversion; S-waves are stripped out rather than utilized. Clusters actively "steal" events from one another every tick based on empirical intensity calculations. During swarms or doublet events, P-waves of secondary quakes fall into the S-wave arrival window of the primary quake and are discarded, blinding the engine.
 3. **Hypocenter Inversion (`EarthquakeAnalysis.java` & `hypocenter_search.cu`)**: Executes brute-force Fibonacci disk scanning ($\sim 78,000$ points across 4 phases, evaluating $\sim 600,000$ travel times per pass) coupled with a trinary depth search. Whenever depth uncertainty exceeds $20\text{ km}$, it forcibly overrides the depth to an arbitrary $10.0\text{ km}$ fallback. Confidence intervals are calculated by marching 256 radial rays across 4 concentric polygons with repeated depth sweeps. The CUDA kernel allocates and frees VRAM on every invocation, suffers from an $O(1)$ single-station origin calculation trick, and is bottlenecked by repeated `atan2f` haversine calls.
 4. **ShakeMap & Population Heuristics (`GlobalQuakePanel.java`, `ShakemapService.java`, `ShakeMap.java`)**: In `GlobalQuakePanel.java` (lines 200–294), the engine computes `countFelt` ("Possibly felt by") and `countStrong` ("Possibly heavily felt by") using arbitrary arctangent exposure multipliers:
-   $$\text{feltMultiplier}(\text{PGA}) = \frac{2}{\pi} \arctan(0.2 \times \text{PGA})$$
-   $$\text{feltStrongMultiplier}(\text{PGA}) = \max\left(0, \frac{2}{\pi} \arctan(0.2 \times (\text{PGA} - \text{PGA}_{\text{MMI V}}))\right)$$
+
+```math
+\text{feltMultiplier}(\text{PGA}) = \frac{2}{\pi} \arctan(0.2 \times \text{PGA})
+```
+
+```math
+\text{feltStrongMultiplier}(\text{PGA}) = \max\left(0, \frac{2}{\pi} \arctan(0.2 \times (\text{PGA} - \text{PGA} _{\text{MMI V}}))\right)
+```
+
    These multipliers are multiplied directly against municipal census populations without spatial integration, building fragility modeling, or empirical calibration.
 5. **Municipality Catalog & Spatial Scanning (`ShakemapService.java`, `FeatureCities.java`, `Regions.java`)**: `ShakemapService` executes a linear $O(N)$ scan over 43,000 CSV rows (`worldcities.csv`) for every earthquake update, computing geological distances with spherical trigonometry on a single thread with zero spatial indexing. `Regions.java` parses $> 65\text{ MB}$ of raw GeoJSON into Java heap `Path2D.Float` objects, incurring high GC pressure.
 
@@ -38,15 +45,34 @@ longAverage *= 0.75;
 
 Running absolute filtered amplitudes ($|V_{\text{filtered}}|$) are tracked using five separate exponential moving averages:
 - **Short Average** ($\tau = 0.5\text{ s}$, line 126):
-  $$\bar{A}_{\text{short}} \leftarrow \bar{A}_{\text{short}} - \frac{\bar{A}_{\text{short}} - |V|}{F_s \times 0.5}$$
+
+```math
+\bar A _{\text{short}} \leftarrow \bar A _{\text{short}} - \frac{\bar A _{\text{short}} - |V|}{F_s \times 0.5}
+```
+
 - **Medium Average** ($\tau = 6.0\text{ s}$, line 127):
-  $$\bar{A}_{\text{med}} \leftarrow \bar{A}_{\text{med}} - \frac{\bar{A}_{\text{med}} - |V|}{F_s \times 6.0}$$
+
+```math
+\bar A _{\text{med}} \leftarrow \bar A _{\text{med}} - \frac{\bar A _{\text{med}} - |V|}{F_s \times 6.0}
+```
+
 - **Third Average** ($\tau = 30.0\text{ s}$, line 128):
-  $$\bar{A}_{\text{third}} \leftarrow \bar{A}_{\text{third}} - \frac{\bar{A}_{\text{third}} - |V|}{F_s \times 30.0}$$
+
+```math
+\bar A _{\text{third}} \leftarrow \bar A _{\text{third}} - \frac{\bar A _{\text{third}} - |V|}{F_s \times 30.0}
+```
+
 - **Special Average** (Instant attack, slow decay with $\tau = 40.0\text{ s}$, lines 130–134):
-  $$\bar{A}_{\text{spec}} = \begin{cases} |V| & \text{if } |V| > \bar{A}_{\text{spec}} \\ \bar{A}_{\text{spec}} - \frac{\bar{A}_{\text{spec}} - |V|}{F_s \times 40.0} & \text{otherwise} \end{cases}$$
+
+```math
+\bar A _{\text{spec}} = \begin{cases} |V| & \text{if } |V| > \bar A _{\text{spec}} \\ \bar A _{\text{spec}} - \frac{\bar A _{\text{spec}} - |V|}{F_s \times 40.0} & \text{otherwise} \end{cases}
+```
+
 - **Long Average** ($\tau = 200.0\text{ s}$, lines 136–138):
-  $$\text{If } \frac{\bar{A}_{\text{short}}}{\bar{A}_{\text{long}}} < 4.0: \quad \bar{A}_{\text{long}} \leftarrow \bar{A}_{\text{long}} - \frac{\bar{A}_{\text{long}} - |V|}{F_s \times 200.0}$$
+
+```math
+\text{If } \frac{\bar A _{\text{short}}}{\bar A _{\text{long}}} < 4.0: \quad \bar A _{\text{long}} \leftarrow \bar A _{\text{long}} - \frac{\bar A _{\text{long}} - |V|}{F_s \times 200.0}
+```
 
 ### 1.2 Pick Trigger & Threshold Conditions
 Event trigger logic is implemented in lines 140–152:
@@ -72,11 +98,11 @@ if (shortAverage / longAverage < EVENT_THRESHOLD) {
 With `EVENT_THRESHOLD = 4.75`:
 - `cond1` fires when $\text{ratio} \ge 6.175$ and sustained for $> 200\text{ ms}$.
 - `cond2` fires when $\text{ratio} \ge 9.7375$ and sustained for $> 100\text{ ms}$.
-- `condMain` requires $\bar{A}_{\text{short}} / \bar{A}_{\text{third}} > 3.0$.
+- `condMain` requires $\bar A _{\text{short}} / \bar A _{\text{third}} > 3.0$.
 
 ### 1.3 Identified Anti-Patterns & Flaws in `BetterAnalysis`
 1. **Vulnerability to Single-Sample Glitches and Glints**:
-   A single SeedLink transmission spike or telemetry glitch drives $\bar{A}_{\text{short}}$ upwards rapidly within 100 ms, satisfying `cond2` and `condMain`. The event is immediately created and placed in `getDetectedEvents().add(0, event)`.
+   A single SeedLink transmission spike or telemetry glitch drives $\bar A _{\text{short}}$ upwards rapidly within 100 ms, satisfying `cond2` and `condMain`. The event is immediately created and placed in `getDetectedEvents().add(0, event)`.
 2. **Deferred Glitch Abort Mechanism (`endBadly`)**:
    Lines 172–175 attempt to clean up short glitches:
    ```java
@@ -190,7 +216,7 @@ The inversion executes four sequential coarse-to-fine phases (lines 258–299):
 | **Phase 3 (EXACT)** | $100\text{ km}$ | $4,000$ | 8 iterations | Focus within $1^{\circ}$ |
 | **Phase 4 (DEPTH)** | $10\text{ km}$ | $4,000$ | 10 iterations | Determine focal depth |
 
-Total search space: $\approx 78,000$ horizontal coordinates $\times 6\text{--}10$ depth levels $\approx 600,000$ TauP travel-time interpolations per single inversion pass.
+Total search space: $\approx 78,000$ horizontal coordinates $\times 6\text{ to }10$ depth levels $\approx 600,000$ TauP travel-time interpolations per single inversion pass.
 
 ### 3.2 Depth Inversion & The 10 km Hardcoded Fallback
 Depth search is performed via trinary division (`getBestAtDepthBinarySearch`, lines 866–909):
@@ -216,7 +242,7 @@ if (DEPTH_FIX_ALLOWED) {
     }
 }
 ```
-Whenever depth confidence interval width exceeds $20\text{ km}$ and spans $10\text{ km}$, **the engine forcibly locks focal depth to exactly $10.0\text{ km}$**. In `fixDepth()` (lines 651–678), the origin time is recalculated as the median origin across reporting stations assuming this arbitrary 10 km depth.
+Whenever depth confidence interval width exceeds $20\text{ km}$ and spans $10\text{ km}$, the engine forcibly locks focal depth to exactly $10.0\text{ km}$. In `fixDepth()` (lines 651–678), the origin time is recalculated as the median origin across reporting stations assuming this arbitrary 10 km depth.
 
 ### 3.3 256-Ray Confidence Polygon Marching
 To calculate horizontal uncertainty bounds (`calculatePolygonConfidenceIntervals`, lines 680–691 and 417–466):
@@ -235,7 +261,8 @@ public static double calculateHeuristic(PreliminaryHypocenter hypocenter) {
     return Math.pow(hypocenter.correctStations, 2) / Math.pow(hypocenter.err, 2);
 }
 ```
-Where $\text{err} = \sum |t_{\text{pred}} - t_{\text{obs}}|$, and $\text{correctStations} = \sum \max(0, 1 - \frac{|t_{\text{pred}} - t_{\text{obs}}|}{\Delta_{\text{thresh}}})$. Squaring both numerator and denominator produces extreme numerical instability when residual error is small.
+Where $\text{err} = \sum |t_{\text{pred}} - t_{\text{obs}}|$ and
+$\text{correctStations} = \sum \max(0, 1 - \frac{|t_{\text{pred}} - t_{\text{obs}}|}{\Delta_{\text{thresh}}})$. Squaring both numerator and denominator produces extreme numerical instability when residual error is small.
 
 ### 3.5 CUDA Hypocenter Search (`hypocenter_search.cu`)
 Inspection of `hypocenter_search.cu` reveals critical structural defects:
@@ -441,7 +468,7 @@ In `ShakemapService.java`:
 
 | Component | Legacy GlobalQuake Implementation | Architectural Flaw / Anti-Pattern | QuakeSnail Replacement |
 |---|---|---|---|
-| **Phase Picker** | 5 moving averages ($\tau \in [0.5, 200]\text{ s}$), ratio thresholds $6.175$ & $9.7375$. | Single-sample telemetry spikes trigger false events; 1.0–7.5s delayed abort; station reset after 5 min shaking; out-of-order packets force resets. | Multi-band filter + Beltrami-Morse 3-point impulse gate ($\Delta_- v \cdot \Delta_+ v > 0$) + 1-sample causal deferral (`pending_impulse`) + $\mathcal{H}_{\text{clock}} \oplus \mathcal{H}_{\text{nope}}$ stationary microseism split. |
+| **Phase Picker** | 5 moving averages ($\tau \in [0.5, 200]\text{ s}$), ratio thresholds $6.175$ & $9.7375$. | Single-sample telemetry spikes trigger false events; 1.0–7.5s delayed abort; station reset after 5 min shaking; out-of-order packets force resets. | Multi-band filter + Beltrami-Morse 3-point impulse gate (`Delta_- v * Delta_+ v > 0`) + 1-sample causal deferral (`pending_impulse`) + $\mathcal H _{\text{clock}} \oplus \mathcal H _{\text{nope}}$ stationary microseism split. |
 | **Phase Association** | Apparent velocity $v = 5.0\text{ km/s} \pm 2.5\text{ s}$; events stolen across clusters by expected intensity; S-waves discarded. | Thrashing pick assignments; secondary quakes suppressed as false S-waves; no joint P/S inversion. | Deterministic $\mathfrak{so}(C)$ skew-symmetric triad tie-breaking; joint P and S residual association; ring-buffer wavefront tracking without cluster stealing. |
 | **Hypocenter Inversion** | 4-phase Fibonacci disk scan ($\sim 78,000$ points) + trinary depth search + 10 km depth clamp. | $O(N)$ brute-force search; artificial 10 km depth pileup; ad-hoc objective $(N_{\text{corr}})^2 / (\text{err})^2$. | Fast Fibonacci seed ($\sim 500$ points) + Damped Huber-IRLS / Ridge non-linear residual refinement with analytical Jacobian $\mathbf{J} = [\nabla T, 1]^T$. |
 | **Confidence Bounds** | 256-ray radial marching across 4 concentric polygons with continuous depth sweeps. | Extreme CPU lockups, UI freezing, high thread contention. | Analytical 3D covariance matrix $\mathbf{C} = \hat{\sigma}^2 (\mathbf{J}^T \mathbf{W} \mathbf{J} + \lambda \mathbf{I})^{-1}$ yielding true confidence ellipsoids. |

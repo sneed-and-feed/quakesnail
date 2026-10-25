@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "system": "QuakeSnail",
   "package_version": "0.1.0",
-  "timestamp_utc": "2026-10-24T17:05:41Z",
+  "timestamp_utc": "2026-10-25T18:34:44Z",
   "architecture_receipts": {
     "target_hardware": "BCM2712 Cortex-A76 / x86_64 SIMD",
     "neon_128bit_compliance": true,

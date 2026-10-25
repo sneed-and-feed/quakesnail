@@ -8,8 +8,9 @@ use crate::{
     CLASSIFICATION_PENDING_IMPULSE, CLASSIFICATION_P_WAVE_ONSET,
     NUM_BANDS,
 };
+use crate::math::*;
 
-pub const PI: f32 = 3.14159265358979323846;
+pub const PI: f32 = core::f32::consts::PI;
 
 /// Second-order section (biquad) coefficients in Direct Form II Transposed:
 /// y[n] = b0 * x[n] + d1[n-1]
@@ -40,12 +41,12 @@ impl Default for BiquadCoeffs {
 impl BiquadCoeffs {
     /// Design Butterworth bandpass filter
     pub fn bandpass(f_low: f32, f_high: f32, fs: f32) -> Self {
-        let f0 = (f_low * f_high).sqrt();
+        let f0 = fast_sqrt(f_low * f_high);
         let bw = (f_high - f_low).max(0.01);
         let q = (f0 / bw).max(0.1);
         let w0 = 2.0 * PI * f0 / fs;
-        let sin_w = w0.sin();
-        let cos_w = w0.cos();
+        let sin_w = fast_sin(w0);
+        let cos_w = fast_cos(w0);
         let alpha = sin_w / (2.0 * q);
 
         let a0 = 1.0 + alpha;
@@ -86,7 +87,7 @@ pub fn get_default_band_coeffs(band_idx: usize, fs: f32) -> BiquadCoeffs {
 #[inline(always)]
 pub fn beltrami_metric(v_t: f32, v_prev: f32, kappa: f32) -> f32 {
     let dv = (v_t - v_prev).abs();
-    dv / (1.0 + kappa * dv * dv).sqrt()
+    dv / fast_sqrt(1.0 + kappa * dv * dv)
 }
 
 /// 3-Point Discrete Morse Impulse Gate:
@@ -162,8 +163,8 @@ pub fn process_channel_sample(
 
     let fs = if state.sample_rate_hz > 0.0 { state.sample_rate_hz } else { 50.0 };
     let dt = 1.0 / fs;
-    let alpha_sta = (-dt / 1.0).exp();
-    let alpha_lta = (-dt / 20.0).exp();
+    let alpha_sta = fast_exp(-dt / 1.0);
+    let alpha_lta = fast_exp(-dt / 20.0);
 
     let is_primed = state.impulse_counter >= 100;
     let base_threshold: f32 = 3.5;
@@ -218,7 +219,7 @@ pub fn process_channel_sample(
         }
     } else {
         let delta = (raw_sample - state.last_sample).abs();
-        let noise_std = state.noise_var.sqrt().max(1e-4);
+        let noise_std = fast_sqrt(state.noise_var).max(1e-4);
 
         if is_primed && (delta > 4.0 * noise_std || state.ratio > effective_threshold) {
             state.gate_state = CLASSIFICATION_PENDING_IMPULSE;

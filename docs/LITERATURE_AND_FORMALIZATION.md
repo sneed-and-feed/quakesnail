@@ -26,7 +26,7 @@ The monolithic Java codebase `GlobalQuake` (`GQ`, developed by xspanger3770) pio
 1. **Telemetry Glitch Vulnerability**: Single-sample packet drops, SeedLink bit-flips, or calibration spikes trigger standard short-term average/long-term average (`STA/LTA`) pickers, creating spurious earthquake alerts and ghost clusters.
 2. **Greedy Cluster-Stealing & S-Wave Splits**: The legacy associator (`ClusterAnalysis.java`) uses greedy distance/time heuristics that steal picks from neighboring events during swarms, or mistake delayed S-wave moveout for a separate slower earthquake, spawning false secondary events.
 3. **Brute-Force Fibonacci Search with 10 km Depth Collapse**: Hypocenter inversion (`EarthquakeAnalysis.java` / `GQHypocenterSearch.cu`) evaluates up to hundreds of thousands of candidate points on Fibonacci grids, falling back to a hardcoded $10\text{ km}$ depth whenever vertical resolution degrades, and lacking analytical confidence ellipsoids.
-4. **Linear Municipality Scan & Subjective "People Felt" Multipliers**: Municipality intensity lookup (`FeatureCities.java`, `worldcities.csv`) scans 43,000 rows linearly ($O(N)$), consuming significant CPU time, while displaying unscientific and arbitrary "number of people felt" counters (`countFelt`, `countStrong`) computed via heuristic population `atan` multipliers.
+4. **Linear Municipality Scan & Subjective "People Felt" Multipliers**: Municipality intensity lookup (`FeatureCities.java`, `worldcities.csv`) scans 43,000 rows linearly $(O(N))$, consuming significant CPU time, while displaying unscientific and arbitrary "number of people felt" counters (`countFelt`, `countStrong`) computed via heuristic population `atan` multipliers.
 
 **QuakeSnail** replaces this architecture with a modular Python engine backed by a compiled `no_std` Rust SIMD kernel (`quakesnail_rs`, `< 2.0 MB` SRAM, `< 35 MB` heap), unified with the formal mathematical physics of `stylo`, `g3vm`, `oatse`, `toposnail`, and `bmhd` (`formalization/OcclusionTriad.lean`).
 
@@ -38,17 +38,22 @@ This report provides the foundational literature grounding from recent (2022–2
 
 ### 2.1 Latency Budgets & Architectural Decomposition
 A modern real-time EEW system operates under a strict latency budget:
-$$\tau_{\text{total}} = \tau_{\text{wave}} + \tau_{\text{sensor}} + \tau_{\text{telemetry}} + \tau_{\text{pick/assoc}} + \tau_{\text{invert}} + \tau_{\text{disseminate}}$$
+
+```math
+\tau_\text{total} = \tau_\text{wave} + \tau_\text{sensor} + \tau_\text{telemetry} + \tau_\text{pick/assoc} + \tau_\text{invert} + \tau_\text{disseminate}
+```
+
 Where:
-- $\tau_{\text{wave}} = \frac{d_1}{v_P}$: Travel time of the primary P-wave from hypocenter to the closest station ($d_1 \approx 10\text{–}30\text{ km} \implies \tau_{\text{wave}} \approx 1.7\text{–}5.0\text{ s}$).
-- $\tau_{\text{sensor}}$ & $\tau_{\text{telemetry}}$: Analog-to-digital conversion, packetization (miniSEED Steim2 record framing: typically $512\text{ bytes}$ or $1\text{ s}$ records), and SeedLink streaming latency over TCP/IP ($0.5\text{–}2.0\text{ s}$).
+- Travel time $\tau_\text{wave} = d_1 / v_P$ of the primary P-wave from hypocenter to the closest station
+  ($d_1 \approx 10\text{–}30\text{ km} \implies \Delta t \approx 1.7\text{–}5.0\text{ s}$).
+- Conversion and telemetry delays $\tau_\text{sensor}, \tau_\text{telemetry}$: Analog-to-digital conversion, packetization (miniSEED Steim2 record framing: typically $512\text{ bytes}$ or $1\text{ s}$ records), and SeedLink streaming latency over TCP/IP ($0.5\text{–}2.0\text{ s}$).
 - $\tau_{\text{pick/assoc}}$: Waveform arrival picking and multi-station phase association ($< 20\text{ ms}$ in compiled Rust SIMD).
 - $\tau_{\text{invert}}$: Coarse-to-fine hypocenter, origin time, and magnitude inversion ($< 5\text{ ms}$ via damped Huber-IRLS).
 - $\tau_{\text{disseminate}}$: Notification transport (USGS Wireless Emergency Alerts [WEA] via FEMA IPAWS takes $6\text{–}12\text{ s}$; smartphone push via MyShake or WebSocket feeds takes $1\text{–}3\text{ s}$; local tactical siren/relay triggers in $< 50\text{ ms}$).
 
 ### 2.2 Operational EEW Paradigms
 1. **Network-Based Point-Source Systems**:
-   - *EPIC* (Earthquake Point-Source Integrated Code; Chung et al., 2020, 2024; Kohler et al., 2023): Associates P-wave arrivals across $\ge 4$ stations to invert point-source $(x_0, y_0, z_0, t_0)$ and estimate magnitude $M$ from peak displacement $P_d$ and peak period $\tau_c$.
+   - *EPIC* (Earthquake Point-Source Integrated Code; Chung et al., 2020, 2024; Kohler et al., 2023): Associates P-wave arrivals across $\ge 4$ stations to invert point-source $(x, y, z, t)$ and estimate magnitude $M$ from peak displacement and period $(P_d, \tau_c)$.
    - *Virtual Seismologist (VS)* (Cua & Heaton, 2007; Behr et al., 2016): Bayesian formulation combining prior earthquake likelihood with ground-motion envelope attenuation.
 2. **Finite-Fault Rupture Detectors**:
    - *FinDer* (Finite-Fault Detector; Böse et al., 2018, 2023): Matches real-time PGA contours against pre-computed rupture templates to estimate fault length and orientation for large ($M \ge 6.5$) events.
@@ -78,10 +83,19 @@ In the USGS ShakeAlert 2019–2023 operational review (Kohler et al., 2023; Coch
 
 ### 3.2 Classical Signal-Processing Pickers & Vulnerabilities
 - **Multi-Band STA/LTA** (Allen, 1978; Earle & Shearer, 1994):
-  $$\text{STA}(t) = \frac{1}{N_{\text{sta}}} \sum_{k=0}^{N_{\text{sta}}-1} v(t-k)^2, \quad \text{LTA}(t) = \frac{1}{N_{\text{lta}}} \sum_{k=0}^{N_{\text{lta}}-1} v(t-k)^2, \quad R(t) = \frac{\text{STA}(t)}{\text{LTA}(t)}$$
-  *Failure Mode*: When an isolated SeedLink telemetry glitch occurs (e.g. single sample bit-flip $v(t_0) = 10^5\text{ counts}$), $\text{STA}(t_0)$ jumps instantaneously by $\sim 10^{10} / N_{\text{sta}}$, causing $R(t_0) \gg 100$ and producing a high-confidence false pick.
+
+```math
+\text{STA}(t) = \frac{1}{N_\text{sta}} \sum_{k=0}^{N_\text{sta}-1} v(t-k)^2, \quad \text{LTA}(t) = \frac{1}{N_\text{lta}} \sum_{k=0}^{N_\text{lta}-1} v(t-k)^2, \quad R(t) = \frac{\text{STA}(t)}{\text{LTA}(t)}
+```
+
+  *Failure Mode*: When an isolated SeedLink telemetry glitch occurs (e.g. single sample bit-flip with $v(t_0) = 10^5\text{ counts}$),
+  $\text{STA}$ jumps instantaneously by $\sim 10^{10} / N_\text{sta}$, causing $R(t) \gg 100$ and producing a high-confidence false pick.
 - **Autoregressive AIC** (Akaike Information Criterion; Sleeman & van Eck, 1999):
-  $$\text{AIC}(k) = k \log(\sigma_1^2) + (N - k) \log(\sigma_2^2)$$
+
+```math
+\text{AIC}(k) = k \log(\sigma_1^2) + (N - k) \log(\sigma_2^2)
+```
+
   *Limitation*: Computationally expensive for streaming continuous data; requires pre-triggering window.
 
 ### 3.3 QuakeSnail Glitch Shielding Architecture
@@ -91,20 +105,35 @@ QuakeSnail resolves the telemetry glitch problem through three synchronized math
    - Regional band: $0.4\text{–}5.0\text{ Hz}$ (crustal P and S body waves)
    - Local microseismic band: $2.0\text{–}5.0\text{ Hz}$ (high-frequency local onsets)
 2. **3-Point Discrete Morse Critical-Point Impulse Gating**:
-   $$\Delta_- v(t) = v(t) - v(t-1), \quad \Delta_+ v(t) = v(t) - v(t+1)$$
-   $$I_{\text{Morse}}(v, t) = \Delta_- v(t) \cdot \Delta_+ v(t) = (v(t) - v(t-1))(v(t) - v(t+1))$$
-   - A candidate impulse requires $I_{\text{Morse}}(v, t) > 0$ and $|\Delta_- v(t)| \ge \theta_{\text{threshold}}$.
+
+```math
+\Delta_- v(t) = v(t) - v(t-1), \quad \Delta_+ v(t) = v(t) - v(t+1)
+```
+
+```math
+I_\text{Morse}(v, t) = \Delta_- v(t) \cdot \Delta_+ v(t) = (v(t) - v(t-1))(v(t) - v(t+1))
+```
+
+   - A candidate impulse requires $(I_\text{Morse}(v, t) > 0, \; |\Delta_- v(t)| \ge \theta_\text{thresh})$.
    - Monotone compaction ramps and step-function baseline offsets satisfy $\Delta_- v \cdot \Delta_+ v \le 0$ and are strictly rejected.
 3. **1-Sample Causal Deferral (`pending_impulse`)**:
    - True elastodynamic P-wave arrivals satisfy finite wavefield continuity: energy persists across successive samples:
-     $$E_{\text{persist}}(t_0) = |v(t_0 + 1) - v_{\text{baseline}}|$$
-   - An isolated digital telemetry glitch has width $w = 1$ sample ($v(t_0+1) \approx v_{\text{baseline}}$).
-   - Upon detecting a Morse trigger at sample $t_0$, the Rust SIMD state machine sets state to `pending_impulse`. At sample $t_0+1$:
-     - If $E_{\text{persist}}(t_0) < \theta_{\text{persist}}$, the spike is rejected as `glint_rejected`.
-     - If $E_{\text{persist}}(t_0) \ge \theta_{\text{persist}}$, the pick is promoted to `p_wave_onset`.
+
+```math
+E_\text{persist}(t_0) = |v(t_0 + 1) - v_\text{baseline}|
+```
+
+   - An isolated digital telemetry glitch has width $w = 1$ sample $(v(t_0+1) \approx v_\text{baseline})$.
+   - Upon detecting a Morse trigger at sample $t_0$, the Rust SIMD state machine sets state to `pending_impulse`. At the subsequent sample:
+     - If $E_\text{persist} < \theta_\text{persist}$, the spike is rejected as `glint_rejected`.
+     - If $E_\text{persist} \ge \theta_\text{persist}$, the pick is promoted to `p_wave_onset`.
    - The false trigger rate under single-sample digital glitches is proven to be identically **0.000**.
 4. **Beltrami Exterior-Curl Spike Preservation**:
-   $$\Delta_{3\text{pt}} v(t) = \frac{\Delta_- v(t) + \Delta_+ v(t)}{2} = v(t) - \frac{v(t-1) + v(t+1)}{2}$$
+
+```math
+\Delta_{3\text{pt}} v(t) = \frac{\Delta_- v(t) + \Delta_+ v(t)}{2} = v(t) - \frac{v(t-1) + v(t+1)}{2}
+```
+
    For true high-frequency impulsive stringers or genuine impulsive P-wave arrivals, 100% of the true physical spike amplitude is preserved without low-pass smearing.
 
 ---
@@ -115,7 +144,7 @@ QuakeSnail resolves the telemetry glitch problem through three synchronized math
 
 | Algorithm | Authors & Venue | Primary Mechanism | Advantages | Bottlenecks / Failure Modes |
 |---|---|---|---|---|
-| **REAL** | Zhang, Ellsworth, Beroza (2019, SRL; DOI: 10.1785/0220190052) | Grid search in 3D space-time, counting P and S picks within travel-time moveout windows | Simple, robust, physically constrained by 1D velocity models | Slow grid search ($O(N_{\text{grid}} \cdot N_{\text{picks}})$); misses overlapping events; memory intensive |
+| **REAL** | Zhang, Ellsworth, Beroza (2019, SRL; DOI: 10.1785/0220190052) | Grid search in 3D space-time, counting P and S picks within travel-time moveout windows | Simple, robust, physically constrained by 1D velocity models | Slow grid search $(O(N_\text{grid} \cdot N_\text{picks}))$; misses overlapping events; memory intensive |
 | **GaMMA** | Zhu, McBrearty, Mousavi, Ellsworth, Beroza (2022, JGR; arXiv:2109.09008) | Gaussian Mixture Model via Expectation-Maximization (EM) clustering in space-time-amplitude | Unsupervised; jointly estimates origin time, hypocenter, and magnitude; recovers dense catalogs | Computationally heavy EM loops; sensitive to initial cluster seed count; can smear simultaneous events |
 | **PhaseLink** | Ross, Yue, Meier, Hauksson, Beroza (2019, BSSA; DOI: 10.1785/0120180292) | Deep Graph Convolutional Network (GCN) linking pairwise pick nodes | Fast inference on GPUs; learns complex travel-time moveout | Requires extensive training data; black-box failure modes; cannot run `no_std` on edge microcontrollers |
 | **PyOcto** | Münchmeyer (2024, Seismica; arXiv:2310.11157) | 4D space-time octree spatial partitioning combined with travel-time graph traversal | 10–50x faster than GaMMA/REAL; highly scalable; open-source Python/C++ | Dependent on octree resolution tuning; cluster stealing in high-density aftershock swarms |
@@ -135,12 +164,21 @@ When an earthquake occurs, seismic stations record multiple wave types:
 **The S-Wave Splitting Trap in Legacy Systems**:
 In legacy `GlobalQuake`, when a moderate-to-large earthquake occurs, stations at $50\text{–}300\text{ km}$ distance pick the S-wave arrival several tens of seconds after the P-wave. Because `ClusterAnalysis.java` lacks an antisymmetric cross-phase discriminator, the incoming cluster of high-amplitude S-wave picks is treated as a new, separate earthquake whose origin time is shifted by $\Delta t_{S-P} = d (\frac{1}{v_S} - \frac{1}{v_P})$. This causes the notorious **phantom secondary earthquake split**.
 
-**QuakeSnail's $\mathfrak{so}(C)$ Solution**:
-QuakeSnail maintains a ring buffer of active wavefront envelopes. For every candidate pick $(t_i, \mathbf{x}_i)$, the association affinity is evaluated against candidate parent clusters $c_1$ (new cluster) and $c_2$ (existing cluster):
-- If the arrival time matches theoretical S-wave moveout from $c_2$ ($|t_i - (t_0(c_2) + T_S(\mathbf{x}_i, \mathbf{m}_{c_2}))| \le \delta\tau_{\text{tol}}$), the interaction tensor entry $W(i_0, c_2, c_1)$ is set to a high positive value.
+**QuakeSnail's Lie-Algebraic Solution** in $\mathfrak{so}(C)$:
+QuakeSnail maintains a ring buffer of active wavefront envelopes. For candidate pick $(t_i, \mathbf x_i)$, association affinity is evaluated against candidate new cluster $A$ and existing cluster $B$:
+- If the arrival time matches theoretical S-wave moveout from existing cluster $B$ with interaction tensor $W(i_0, B, A) > 0$:
+
+```math
+|t_i - (t_0(B) + T_S(\mathbf x_i, \mathbf m_B))| \le \delta\tau_\text{tol}
+```
+
 - By the skew-symmetric triad margin:
-  $$\ell_{\text{post}}(c_2) - \ell_{\text{post}}(c_1) = 2 \beta \alpha (W(i_0, c_2, c_1) - W(i_0, c_1, c_2)) > 0$$
-  the pick is uniquely bound as the S-phase of cluster $c_2$.
+
+```math
+\ell_\text{post}(B) - \ell_\text{post}(A) = 2 \beta \alpha (W(i_0, B, A) - W(i_0, A, B)) > 0
+```
+
+  the pick is uniquely bound as the S-phase of cluster $B$.
 - The probability of a false split is proven to vanish identically, eliminating phantom doublets.
 
 ---
@@ -149,40 +187,78 @@ QuakeSnail maintains a ring buffer of active wavefront envelopes. For every cand
 
 ### 5.1 Travel-Time Solvers
 1. **TauP Method** (Crotwell, Owens, Ritsema, 1999, SRL, DOI: 10.1785/gssrl.70.2.154):
-   - Computes travel times and ray paths in spherically symmetric 1D Earth models (PREM, IASP91, AK135) by parameterizing paths with the ray parameter $p = \frac{r \sin i}{v(r)}$:
-     $$T(p) = \tau(p) + p X(p), \quad X(p) = 2 \int_{r_b}^{r_t} \frac{p / r}{\sqrt{u(r)^2 - p^2}} dr, \quad \tau(p) = 2 \int_{r_b}^{r_t} \frac{\sqrt{u(r)^2 - p^2}}{r} dr$$
+   - Computes travel times and ray paths in spherically symmetric 1D Earth models (PREM, IASP91, AK135) by parameterizing paths with the ray parameter $p = (r \sin i) / v(r)$:
+
+```math
+T(p) = \tau(p) + p X(p), \quad X(p) = 2 \int_{r_b}^{r_t} \frac{p / r}{\sqrt{u(r)^2 - p^2}} dr, \quad \tau(p) = 2 \int_{r_b}^{r_t} \frac{\sqrt{u(r)^2 - p^2}}{r} dr
+```
+
    - Disadvantage in legacy Java: GlobalQuake recomputes travel times or stores massive tabular caches with linear interpolation.
 2. **Fast Marching Method (FMM) Eikonal Solver** (Sethian, 1996; Rawlinson & Sambridge, 2004):
    - Solves the non-linear Eikonal equation on 3D Cartesian or spherical grids:
-     $$|\nabla T(\mathbf{x})| = s(\mathbf{x}) = \frac{1}{v(\mathbf{x})}$$
+
+```math
+|\nabla T(\mathbf x)| = s(\mathbf x) = \frac{1}{v(\mathbf x)}
+```
+
    - Handles continuous 3D velocity gradients and subducting slabs without ray shadowing.
 3. **3D Pseudo-Bending Raytracer** (Um & Thurber, 1987, BSSA, DOI: 10.1785/BSSA0770030972; aligned with `g3vm v0.7.0`):
-   - Iteratively perturbs a 3-point ray segment midpoint $\mathbf{x}_{\text{mid}}$ along the velocity gradient $\nabla v$ to minimize travel time via Fermat's Principle:
-     $$\mathbf{x}_{\text{mid}}' = \mathbf{x}_{\text{mid}} + \frac{1}{8 c} \left( \nabla v - (\nabla v \cdot \hat{\mathbf{t}}) \hat{\mathbf{t}} \right) L^2$$
+   - Iteratively perturbs a 3-point ray segment midpoint $\mathbf x_\text{mid}$ along velocity gradient $\nabla v$ to minimize travel time via Fermat's Principle:
+
+```math
+\mathbf x_\text{mid}' = \mathbf x_\text{mid} + \frac{1}{8 c} \left( \nabla v - (\nabla v \cdot \hat{\mathbf t}) \hat{\mathbf t} \right) L^2
+```
 
 ### 5.2 Damped Huber-IRLS Hypocenter Inversion
-Given $N$ station picks with observed arrival times $t_i^{\text{obs}}$, station coordinates $\mathbf{x}_i$, and predicted travel times $t_i^{\text{pred}}(\mathbf{m}) = t_0 + T(\mathbf{x}_i, \mathbf{x}_h)$ where hypocenter parameter is $\mathbf{m} = (x_h, y_h, z_h, t_0) \in \mathbb{R}^4$.
+Given $N$ station picks with observed arrivals $(t_i^\text{obs}, \mathbf x_i)$:
+
+```math
+t_i^\text{pred}(\mathbf m) = t_0 + T(\mathbf x_i, \mathbf x_h), \quad \mathbf m = (x_h, y_h, z_h, t_0) \in \mathbb R^4
+```
 
 The travel-time residual is:
-$$r_i(\mathbf{m}) = t_i^{\text{obs}} - t_i^{\text{pred}}(\mathbf{m})$$
+
+```math
+r_i(\mathbf m) = t_i^\text{obs} - t_i^\text{pred}(\mathbf m)
+```
 
 #### Huber M-Estimator Loss
-$$\rho_\epsilon(r) = \begin{cases} \frac{1}{2} r^2 & \text{if } |r| \le \epsilon \\ \epsilon |r| - \frac{1}{2} \epsilon^2 & \text{if } |r| > \epsilon \end{cases}$$
-The influence function $\psi(r) = \rho'_\epsilon(r)$ and Huber weight function $w_\epsilon(r)$ are:
-$$\psi(r) = \begin{cases} r & |r| \le \epsilon \\ \epsilon \operatorname{sgn}(r) & |r| > \epsilon \end{cases}, \quad w_\epsilon(r) = \frac{\psi(r)}{r} = \begin{cases} 1 & |r| \le \epsilon \\ \frac{\epsilon}{|r|} & |r| > \epsilon \end{cases}$$
+
+```math
+\rho_\epsilon(r) = \begin{cases} \frac{1}{2} r^2 & \text{if } |r| \le \epsilon \\ \epsilon |r| - \frac{1}{2} \epsilon^2 & \text{if } |r| > \epsilon \end{cases}
+```
+
+The influence function and Huber weight function $(\psi(r), w_\epsilon(r))$ are:
+
+```math
+\psi(r) = \begin{cases} r & |r| \le \epsilon \\ \epsilon \mathrm{sgn}(r) & |r| > \epsilon \end{cases}, \quad w_\epsilon(r) = \frac{\psi(r)}{r} = \begin{cases} 1 & |r| \le \epsilon \\ \frac{\epsilon}{|r|} & |r| > \epsilon \end{cases}
+```
+
 Where $\epsilon = 1.345 \cdot \text{MAD}(r)$ guarantees 95% asymptotic efficiency on Gaussian noise while completely shielding against outlier picks.
 
 #### Damped Normal Equations
-At iteration $k$, the Jacobian $\mathbf{G} \in \mathbb{R}^{N \times 4}$ contains partial derivatives:
-$$G_{i, 1..3} = \frac{\partial T(\mathbf{x}_i, \mathbf{x}_h)}{\partial \mathbf{x}_h} = -s(\mathbf{x}_h) \hat{\mathbf{p}}_i, \quad G_{i, 4} = \frac{\partial t_i^{\text{pred}}}{\partial t_0} = 1$$
-Construct diagonal weight matrix $\mathbf{W}^{(k)} = \operatorname{diag}(w_\epsilon(r_1^{(k)}), \dots, w_\epsilon(r_N^{(k)}))$.  
+At iteration $k$, the Jacobian $\mathbf G \in \mathbb R^{N \times 4}$ contains partial derivatives:
+
+```math
+G_{i, 1..3} = \frac{\partial T(\mathbf x_i, \mathbf x_h)}{\partial \mathbf x_h} = -s(\mathbf x_h) \hat{\mathbf p} _i, \quad G_{i, 4} = \frac{\partial t_i^\text{pred}}{\partial t_0} = 1
+```
+
+Construct diagonal weight matrix $\mathbf W^{(k)} = \mathrm{diag}(w_\epsilon(r_1^{(k)}), \dots, w_\epsilon(r_N^{(k)}))$.  
 Solve the damped normal equations:
-$$\left( \mathbf{G}^T \mathbf{W}^{(k)} \mathbf{G} + \lambda \mathbf{I}_4 \right) \Delta \mathbf{m}^{(k)} = \mathbf{G}^T \mathbf{W}^{(k)} \mathbf{r}^{(k)} - \lambda (\mathbf{m}^{(k)} - \mathbf{m}_{\text{prior}})$$
-$$\mathbf{m}^{(k+1)} = \mathbf{m}^{(k)} + \gamma \Delta \mathbf{m}^{(k)}$$
-Because $\lambda > 0$, the matrix $(\mathbf{G}^T \mathbf{W} \mathbf{G} + \lambda \mathbf{I}_4)$ is strictly positive definite, with condition number $\kappa \le \frac{\sigma_{\max}(\mathbf{G})^2 + \lambda}{\lambda} < \infty$.
+
+```math
+\left( \mathbf G^T \mathbf W^{(k)} \mathbf G + \lambda \mathbf I_4 \right) \Delta \mathbf m^{(k)} = \mathbf G^T \mathbf W^{(k)} \mathbf r^{(k)} - \lambda (\mathbf m^{(k)} - \mathbf m_\text{prior})
+```
+
+```math
+\mathbf m^{(k+1)} = \mathbf m^{(k)} + \gamma \Delta \mathbf m^{(k)}
+```
+
+Because $\lambda > 0$, matrix $\mathbf A = \mathbf G^T \mathbf W \mathbf G + \lambda \mathbf I_4$ is strictly positive definite,
+with condition number $\kappa(\mathbf A) \le (\sigma_\mathrm{max}(\mathbf G)^2 + \lambda) / \lambda < \infty$.
 
 ### 5.3 Analytical Covariance Ellipsoids vs. 10 km Depth Collapse
-In legacy `GlobalQuake`, whenever stations are distant or located on one side of an event (large azimuthal gap), the vertical derivative $G_{i, 3} = \partial T / \partial z$ becomes nearly colinear with $G_{i, 4} = 1$. The legacy Gauss-Newton matrix becomes singular, causing the depth search to diverge. Legacy code patches this by hardcoding:
+In legacy `GlobalQuake`, whenever stations are distant or located on one side of an event (large azimuthal gap), vertical derivatives $(G_{i, 3} = \partial T / \partial z, \; G_{i, 4} = 1)$ become nearly colinear. The legacy Gauss-Newton matrix becomes singular, causing the depth search to diverge. Legacy code patches this by hardcoding:
 ```java
 if (depthDiverged || depth < 0) {
     depth = 10.0; // Hardcoded fallback!
@@ -192,17 +268,34 @@ This artificial 10 km depth collapse produces severe errors in seismic hazard es
 
 **QuakeSnail's Analytical Covariance**:
 QuakeSnail evaluates the exact posterior covariance matrix:
-$$\boldsymbol{\Sigma}_{\mathbf{m}} = \sigma_{\text{res}}^2 \left( \mathbf{G}^T \mathbf{W} \mathbf{G} + \lambda \mathbf{I}_4 \right)^{-1}$$
-where $\sigma_{\text{res}}^2 = \frac{1}{N - 4} \sum_{i=1}^N w_i r_i^2$.
-The spatial $3 \times 3$ submatrix $\boldsymbol{\Sigma}_{\mathbf{x}} = \boldsymbol{\Sigma}_{1..3, 1..3}$ defines the 3D confidence ellipsoid:
-$$\mathcal{E} = \{ \mathbf{x} \in \mathbb{R}^3 : (\mathbf{x} - \mathbf{x}_h)^T \boldsymbol{\Sigma}_{\mathbf{x}}^{-1} (\mathbf{x} - \mathbf{x}_h) \le \Delta\chi^2_3(p) \}$$
+
+```math
+\boldsymbol\Sigma_\mathbf m = \sigma_\text{res}^2 \left( \mathbf G^T \mathbf W \mathbf G + \lambda \mathbf I_4 \right)^{-1}
+```
+
+where $\sigma_\text{res}^2 = \frac{1}{N - 4} \sum_{i=1}^N w_i r_i^2$.
+The spatial $3 \times 3$ submatrix $\boldsymbol\Sigma_\mathbf x = \boldsymbol\Sigma_{1..3, 1..3}$ defines the 3D confidence ellipsoid:
+
+```math
+\mathcal E = \lbrace \mathbf x \in \mathbb R^3 : (\mathbf x - \mathbf x_h)^T \boldsymbol\Sigma_\mathbf x^{-1} (\mathbf x - \mathbf x_h) \le \Delta\chi^2_3(p) \rbrace
+```
+
 The principal semi-axes lengths are:
-$$a = \sqrt{\Delta\chi^2 \cdot \lambda_1}, \quad b = \sqrt{\Delta\chi^2 \cdot \lambda_2}, \quad c = \sqrt{\Delta\chi^2 \cdot \lambda_3}$$
-where $\lambda_1 \ge \lambda_2 \ge \lambda_3 > 0$ are the eigenvalues of $\boldsymbol{\Sigma}_{\mathbf{x}}$.
+
+```math
+a = \sqrt{\Delta\chi^2 \cdot \lambda_1}, \quad b = \sqrt{\Delta\chi^2 \cdot \lambda_2}, \quad c = \sqrt{\Delta\chi^2 \cdot \lambda_3}
+```
+
+where eigenvalues $\lambda_1 \ge \lambda_2 \ge \lambda_3 > 0$
+belong to $\boldsymbol\Sigma_\mathbf x$.
 
 Because the damping parameter satisfies $\lambda > 0$:
-$$\lambda_k \le \frac{\sigma_{\text{res}}^2}{\lambda} < \infty$$
-The ellipsoid is strictly non-degenerate, volume is strictly positive, and vertical uncertainty $\sigma_z = \sqrt{\boldsymbol{\Sigma}_{33}}$ is explicitly quantified and displayed on the UI. Depth converges naturally without ever invoking an artificial 10 km clamp!
+
+```math
+\lambda_k \le \frac{\sigma_\text{res}^2}{\lambda} < \infty
+```
+
+The ellipsoid is strictly non-degenerate, volume is strictly positive, and vertical uncertainty $\sigma_z = \sqrt{\boldsymbol\Sigma_{33}}$ is explicitly quantified and displayed on the UI. Depth converges naturally without ever invoking an artificial 10 km clamp!
 
 ---
 
@@ -210,27 +303,50 @@ The ellipsoid is strictly non-degenerate, volume is strictly positive, and verti
 
 ### 6.1 Ground Motion Prediction Equations (GMPE)
 1. **NGA-West2 (Boore, Stewart, Seyhan, Atkinson, 2014; BSSA, DOI: 10.1785/0120130070)**:
-   $$\ln Y = F_M(M) + F_D(R_{\text{rup}}, M) + F_S(V_{S30}, R_{\text{rup}}, M) + \varepsilon$$
+
+```math
+\ln Y = F_M(M) + F_D(R_\text{rup}, M) + F_S(V_{S30}, R_\text{rup}, M) + \varepsilon
+```
+
    Where:
-   - $Y \in \{\text{PGA}, \text{PGV}, \text{PSA}(T)\}$
+   - $Y \in \lbrace \text{PGA}, \text{PGV}, \text{PSA}(T) \rbrace$
    - $F_M$: Magnitude scaling (quadratic in $M$)
-   - $F_D = \left( c_1 + c_2(M - M_{\text{ref}}) \right) \ln\sqrt{R_{\text{rup}}^2 + h^2}$: Geometrical spreading and anelastic attenuation
-   - $F_S = \gamma \ln\left( \frac{\min(V_{S30}, 1000)}{V_{\text{ref}}} \right)$: Linear and non-linear site amplification
+   - $F_D = (c_1 + c_2(M - M_\text{ref})) \ln\sqrt{R_\text{rup}^2 + h^2}$: Geometrical spreading and anelastic attenuation
+   - $F_S = \gamma \ln\left( \frac{\min(V_{S30}, 1000)}{V_\text{ref}} \right)$: Linear and non-linear site amplification
 2. **Anisotropic Subduction & Crustal Attenuation**:
-   In subduction zones (e.g. Cascadia, Japan, Chile), attenuation is strongly anisotropic: seismic energy travels with very low attenuation along the high-$Q$, high-velocity subducting oceanic lithosphere, but attenuates rapidly across the volcanic arc and back-arc mantle wedge.
-   QuakeSnail models this using the Kelvin-Mandel stiffness rotor $\mathbf{M}(\theta)$:
-   $$R_{\text{effective}} = \sqrt{(\mathbf{x} - \mathbf{x}_h)^T \mathbf{A}_{\text{TTI}} (\mathbf{x} - \mathbf{x}_h)}$$
-   where $\mathbf{A}_{\text{TTI}} = \mathbf{R}(\phi, \theta) \operatorname{diag}(1, 1 + \varepsilon_{\text{TTI}}, 1 + \delta_{\text{TTI}}) \mathbf{R}^T$.
+   In subduction zones (e.g. Cascadia, Japan, Chile), attenuation is strongly anisotropic: seismic energy travels with very low attenuation along the high $Q$, high-velocity subducting oceanic lithosphere, but attenuates rapidly across the volcanic arc and back-arc mantle wedge.
+   QuakeSnail models this using the Kelvin-Mandel stiffness rotor $\mathbf M(\theta)$:
+
+```math
+R_\text{eff} = \sqrt{(\mathbf x - \mathbf x_h)^T \mathbf A_\text{TTI} (\mathbf x - \mathbf x_h)}
+```
+
+   where $\mathbf A_\text{TTI} = \mathbf R(\phi, \theta) \mathrm{diag}(1, 1 + \varepsilon_\text{TTI}, 1 + \delta_\text{TTI}) \mathbf R^T$.
 
 ### 6.2 Intensity Metrics & Instrumental Scales
 - **Modified Mercalli Intensity (MMI)**: Derived via USGS ShakeMap 4.0 (Worden et al., 2012, BSSA, DOI: 10.1785/0120110156):
-  $$\text{MMI}(\text{PGA}) = \begin{cases} 3.78 \log_{10}(\text{PGA}) - 1.45 & \log_{10}(\text{PGA}) \le 1.57 \\ 6.03 \log_{10}(\text{PGA}) - 4.98 & \log_{10}(\text{PGA}) > 1.57 \end{cases}$$
-  $$\text{MMI}(\text{PGV}) = \begin{cases} 2.87 \log_{10}(\text{PGV}) + 3.77 & \log_{10}(\text{PGV}) \le 0.70 \\ 4.88 \log_{10}(\text{PGV}) + 2.37 & \log_{10}(\text{PGV}) > 0.70 \end{cases}$$
-- **Japan Meteorological Agency Instrumental Seismic Intensity ($I_{\text{JMA}}$ / Shindo)**:
+
+```math
+\text{MMI}(\text{PGA}) = \begin{cases} 3.78 \log_{10}(\text{PGA}) - 1.45 & \log_{10}(\text{PGA}) \le 1.57 \\ 6.03 \log_{10}(\text{PGA}) - 4.98 & \log_{10}(\text{PGA}) > 1.57 \end{cases}
+```
+
+```math
+\text{MMI}(\text{PGV}) = \begin{cases} 2.87 \log_{10}(\text{PGV}) + 3.77 & \log_{10}(\text{PGV}) \le 0.70 \\ 4.88 \log_{10}(\text{PGV}) + 2.37 & \log_{10}(\text{PGV}) > 0.70 \end{cases}
+```
+
+- **Japan Meteorological Agency Instrumental Seismic Intensity** ($I_\text{JMA}$ / Shindo):
   Computed by filtering three-component acceleration recordings with the JMA combined filter:
-  $$F(f) = \frac{1}{\sqrt{f}} \cdot \frac{1}{\sqrt{1 + 0.694 (f/f_0)^2 + \dots}} \cdot \left( 1 - \exp(-(f/f_c)^3) \right)^{1/2}$$
-  Taking the vector magnitude $a(t) = \sqrt{a_x(t)^2 + a_y(t)^2 + a_z(t)^2}$, finding the value $a_0$ such that the cumulative duration where $a(t) \ge a_0$ is $\tau = 0.3\text{ s}$, and calculating:
-  $$I_{\text{JMA}} = 2.0 \log_{10}(a_0) + 0.94$$
+
+```math
+F(f) = \frac{1}{\sqrt{f}} \cdot \frac{1}{\sqrt{1 + 0.694 (f/f_0)^2 + \dots}} \cdot \left( 1 - \exp(-(f/f_c)^3) \right)^{1/2}
+```
+
+  Taking vector acceleration $a(t) = \lVert \mathbf a(t) \rVert$, finding threshold value $a_0$ with cumulative duration of 0.3 s above threshold, and calculating:
+
+```math
+I_\text{JMA} = 2.0 \log_{10}(a_0) + 0.94
+```
+
   Mapped to 10 discrete Shindo levels ($0, 1, 2, 3, 4, 5-, 5+, 6-, 6+, 7$).
 
 ### 6.3 Spatial Indexing & Eradication of "People Felt" Counters
@@ -245,17 +361,17 @@ The ellipsoid is strictly non-degenerate, volume is strictly positive, and verti
 - **QuakeSnail High-Performance Architecture**:
   1. **Hierarchical Spatial Indexing (Uber H3 / 2D KD-Tree)**:
      - Municipalities are pre-binned into spatial cells (H3 Resolution 6–7, $\sim 1\text{–}5\text{ km}$ spacing).
-     - Given hypocenter $(x_h, y_h)$ and maximum sensible distance $R_{\max}(M) = 10^{0.5 M - 0.5}\text{ km}$, only spatial cells within the bounding radius $R_{\max}$ are fetched ($O(\log N + K)$ where $K \ll N$).
+     - Given hypocenter $(x_h, y_h)$ and bounding radius $R(M) = 10^{0.5 M - 0.5}\text{ km}$, only spatial cells within $R(M)$ are fetched in time $O(\log N + K)$ where $K \ll N$.
      - Lookup time is reduced from $25\text{ ms}$ to $< 0.8\text{ ms}$ ($> 30\times$ speedup).
   2. **Total Eradication of "People Felt" Heuristics**:
      - All references to `countFelt`, `countStrong`, and arbitrary population multipliers are completely purged.
      - The municipality HUD displays purely objective, physics-based quantities:
        - Municipality Name & Administrative District
-       - Epicentral & Hypocentral Distance ($R_{\text{epi}}$, $R_{\text{hyp}}$ in $\text{km}$)
+       - Epicentral & Hypocentral Distance ($(R_\text{epi}, R_\text{hyp})$ in $\text{km}$)
        - Predicted PGA ($\%g$ and $\text{Gal} = \text{cm/s}^2$)
        - Predicted PGV ($\text{cm/s}$)
        - Intensity Badges: Instrumental MMI (Roman Numerals I–XII) & JMA Shindo ($0\text{–}7$)
-       - Real-time P-wave and S-wave countdown timers ($t_{\text{countdown}, P}$, $t_{\text{countdown}, S}$ in seconds)
+       - Real-time P-wave and S-wave countdown timers ($(t_\text{count, P}, t_\text{count, S})$ in seconds)
 
 ---
 
@@ -268,19 +384,34 @@ For QuakeSnail, we specify four rigorous mathematical theorem extensions to be i
 ### 7.1 Theorem 1: Beltrami Exterior-Curl Spike Preservation & 1-Sample Causal Deferral Glitch Bounding
 
 #### Mathematical Context & Invariants
-Let $v : \mathbb{Z} \to \mathbb{R}$ represent a discrete seismic waveform channel.
+Let $v : \mathbb Z \to \mathbb R$ represent a discrete seismic waveform channel.
 1. Backward and forward differences:
-   $$\Delta_- v(t) = v(t) - v(t-1), \quad \Delta_+ v(t) = v(t) - v(t+1)$$
+
+```math
+\Delta_- v(t) = v(t) - v(t-1), \quad \Delta_+ v(t) = v(t) - v(t+1)
+```
+
 2. 3-point discrete Morse critical product:
-   $$I_{\text{Morse}}(v, t) = \Delta_- v(t) \cdot \Delta_+ v(t)$$
+
+```math
+I_\text{Morse}(v, t) = \Delta_- v(t) \cdot \Delta_+ v(t)
+```
+
 3. 3-point Laplacian spike estimator:
-   $$\Delta_{3\text{pt}} v(t) = \frac{\Delta_- v(t) + \Delta_+ v(t)}{2} = v(t) - \frac{v(t-1) + v(t+1)}{2}$$
+
+```math
+\Delta_{3\text{pt}} v(t) = \frac{\Delta_- v(t) + \Delta_+ v(t)}{2} = v(t) - \frac{v(t-1) + v(t+1)}{2}
+```
+
 4. 1-Sample Causal Deferral Decision:
-   $$\text{deferralFilter}(v, t_0, \theta, \theta_{\text{persist}}) = \begin{cases}
-   \text{PWaveAccepted} & \text{if } I_{\text{Morse}}(v, t_0) > 0 \land |\Delta_- v(t_0)| \ge \theta \land |v(t_0+1) - v(t_0-1)| \ge \theta_{\text{persist}} \\
-   \text{GlitchRejected} & \text{if } I_{\text{Morse}}(v, t_0) > 0 \land |v(t_0+1) - v(t_0-1)| < \theta_{\text{persist}} \\
-   \text{NoTrigger} & \text{otherwise}
-   \end{cases}$$
+
+```math
+\text{deferralFilter}(v, t_0, \theta, \theta_\text{persist}) = \begin{cases}
+\text{PWaveAccepted} & \text{if } I_\text{Morse}(v, t_0) > 0 \land |\Delta_- v(t_0)| \ge \theta \land |v(t_0+1) - v(t_0-1)| \ge \theta_\text{persist} \\
+\text{GlitchRejected} & \text{if } I_\text{Morse}(v, t_0) > 0 \land |v(t_0+1) - v(t_0-1)| < \theta_\text{persist} \\
+\text{NoTrigger} & \text{otherwise}
+\end{cases}
+```
 
 #### Lean 4 Formal Specification
 ```lean
@@ -390,12 +521,24 @@ theorem p_wave_acceptance_under_persistence
 
 #### Mathematical Context & Invariants
 1. For $C$ competing clusters and mode index $i \in \mathrm{Fin}\,C$, the bilinear triad operator is:
-   $$B_W(u, v)_k = \sum_{i \in \mathrm{Fin}\,C} \sum_{j \in \mathrm{Fin}\,C} u_i v_j (W_{i,j,k} - W_{i,k,j})$$
+
+```math
+B_{W, k}(u, v) = \sum_{i \in \mathrm{Fin}\,C} \sum_{j \in \mathrm{Fin}\,C} u_i v_j (W_{i,j,k} - W_{i,k,j})
+```
+
 2. Orthogonality holds pointwise:
-   $$\langle v, B_W(u, v) \rangle = \sum_{k} v_k B_W(u, v)_k = 0$$
-3. Exact tie-breaking: when symmetric cluster affinities tie ($\ell_{\text{sym}}(c_1) = \ell_{\text{sym}}(c_2)$), the post-readout logit satisfies:
-   $$\ell_{\text{post}}(c_1) - \ell_{\text{post}}(c_2) = 2 \beta \alpha (W(i_0, c_2, c_1) - W(i_0, c_1, c_2))$$
-4. In seismic phase association, $c_2$ is the parent earthquake cluster and $c_1$ is a spurious secondary cluster. When an S-wave arrival occurs, $W(i_0, c_2, c_1) > W(i_0, c_1, c_2)$ strictly favors $c_2$, preventing secondary earthquake splits.
+
+```math
+\langle v, B_W(u, v) \rangle = \sum_k v_k B_{W, k}(u, v) = 0
+```
+
+3. Exact tie-breaking: when symmetric cluster affinities tie with $\ell_\text{sym}(c_1) = \ell_\text{sym}(c_2)$, the post-readout logit satisfies:
+
+```math
+\ell_\text{post}(c_1) - \ell_\text{post}(c_2) = 2 \beta \alpha (W(i_0, c_2, c_1) - W(i_0, c_1, c_2))
+```
+
+4. In seismic phase association, let parent earthquake cluster $A$ and spurious secondary cluster $B$ be evaluated. When an S-wave arrival occurs, $W(i_0, A, B) > W(i_0, B, A)$ strictly favors parent cluster $A$, preventing secondary earthquake splits.
 
 #### Lean 4 Formal Specification
 ```lean
@@ -494,14 +637,26 @@ theorem soC_breaks_swallow_tie_and_prevents_split {C : ℕ}
 ### 7.3 Theorem 3: Contraction Mapping & Convergence of Damped Huber-IRLS under $SO(6)$ Stiffness Perturbations
 
 #### Mathematical Context & Invariants
-1. The 1D Huber derivative $\psi_\epsilon(r) = \begin{cases} r & |r| \le \epsilon \\ \epsilon \operatorname{sgn}(r) & |r| > \epsilon \end{cases}$ satisfies:
-   $$|\psi_\epsilon(r_1) - \psi_\epsilon(r_2)| \le |r_1 - r_2| \quad (\text{1-Lipschitz continuous})$$
-2. In damped hypocenter inversion with design matrix $\mathbf{G} \in \mathbb{R}^{N \times 4}$ and damping $\lambda > 0$:
-   $$\mathbf{H} = \mathbf{G}^T \mathbf{W} \mathbf{G} + \lambda \mathbf{I}_4$$
-   satisfies $\lambda \|\mathbf{x}\|_2^2 \le \mathbf{x}^T \mathbf{H} \mathbf{x} \le (\|\mathbf{G}\|^2 + \lambda) \|\mathbf{x}\|_2^2$.
-3. Gradient update step $T(\mathbf{m}) = \mathbf{m} - \gamma \nabla \Phi(\mathbf{m})$ with step-size $\gamma = \frac{1}{\|\mathbf{G}\|^2 + \lambda}$ is a strict contraction with contraction factor:
-   $$q = 1 - \frac{\lambda}{\|\mathbf{G}\|^2 + \lambda} = \frac{\|\mathbf{G}\|^2}{\|\mathbf{G}\|^2 + \lambda} < 1$$
-4. Under $SO(6)$ Kelvin-Mandel rotated stiffness $\mathbf{C} = \mathbf{M} \mathbf{C}_0 \mathbf{M}^T$, positive-definiteness is conserved (`so6_stiffness_preserves_pos_def`), ensuring $\|\mathbf{G}\|$ remains strictly bounded.
+1. The 1D Huber derivative $\psi_\epsilon(r) = \begin{cases} r & |r| \le \epsilon \\ \epsilon \mathrm{sgn}(r) & |r| > \epsilon \end{cases}$ satisfies:
+
+```math
+|\psi_\epsilon(r_1) - \psi_\epsilon(r_2)| \le |r_1 - r_2| \quad (\text{1-Lipschitz continuous})
+```
+
+2. In damped hypocenter inversion with design matrix $\mathbf G \in \mathbb R^{N \times 4}$ and damping $\lambda > 0$:
+
+```math
+\mathbf H = \mathbf G^T \mathbf W \mathbf G + \lambda \mathbf I_4
+```
+
+   satisfies $\lambda \|\mathbf x\|_2^2 \le \mathbf x^T \mathbf H \mathbf x \le (\|\mathbf G\|^2 + \lambda) \|\mathbf x\|_2^2$.
+3. Gradient update step $T(\mathbf m) = \mathbf m - \gamma \nabla \Phi(\mathbf m)$ with step-size $\gamma = \frac{1}{\|\mathbf G\|^2 + \lambda}$ is a strict contraction with contraction factor:
+
+```math
+q = 1 - \frac{\lambda}{\|\mathbf G\|^2 + \lambda} = \frac{\|\mathbf G\|^2}{\|\mathbf G\|^2 + \lambda} < 1
+```
+
+4. Under $SO(6)$ Kelvin-Mandel rotated stiffness $\mathbf C = \mathbf M \mathbf C_0 \mathbf M^T$, positive-definiteness is conserved (`so6_stiffness_preserves_pos_def`), ensuring $\|\mathbf G\|$ remains strictly bounded.
 
 #### Lean 4 Formal Specification
 ```lean
@@ -596,16 +751,36 @@ theorem damped_huber_grad_lipschitz (g b damp ε m₁ m₂ : ℝ) :
 
 #### Mathematical Context & Invariants
 1. In $4 \times 4$ hypocenter estimation ($x, y, z, t_0$), the damped normal matrix is:
-   $$\mathbf{H} = \mathbf{G}^T \mathbf{W} \mathbf{G} + \lambda \mathbf{I}_4$$
-   where $\mathbf{G} \in \mathbb{R}^{N \times 4}$, diagonal weight $W_{ii} \in [0, 1]$, and damping $\lambda > 0$.
-2. For any non-zero parameter vector $\mathbf{v} \in \mathbb{R}^4$:
-   $$\lambda \|\mathbf{v}\|_2^2 \le \mathbf{v}^T \mathbf{H} \mathbf{v} \le (\|\mathbf{G}\|^2 + \lambda) \|\mathbf{v}\|_2^2$$
-3. By Rayleigh-Ritz quotient properties on symmetric positive definite matrices, every eigenvalue $\sigma_k(\mathbf{H})$ satisfies:
-   $$\lambda \le \sigma_k(\mathbf{H}) \le \|\mathbf{G}\|^2 + \lambda$$
-4. The covariance matrix $\boldsymbol{\Sigma} = \sigma_{\text{res}}^2 \mathbf{H}^{-1}$ has eigenvalues:
-   $$\frac{\sigma_{\text{res}}^2}{\|\mathbf{G}\|^2 + \lambda} \le \sigma_k(\boldsymbol{\Sigma}) \le \frac{\sigma_{\text{res}}^2}{\lambda}$$
-5. Vertical spatial uncertainty $\sigma_z = \sqrt{\boldsymbol{\Sigma}_{33}}$ is strictly bounded between finite non-zero limits:
-   $$0 < \frac{\sigma_{\text{res}}}{\sqrt{\|\mathbf{G}\|^2 + \lambda}} \le \sigma_z \le \frac{\sigma_{\text{res}}}{\sqrt{\lambda}} < \infty$$
+
+```math
+\mathbf H = \mathbf G^T \mathbf W \mathbf G + \lambda \mathbf I_4
+```
+
+   where $\mathbf G \in \mathbb R^{N \times 4}$, diagonal weight $W_{ii} \in [0, 1]$, and damping $\lambda > 0$.
+2. For any non-zero parameter vector $\mathbf v \in \mathbb R^4$:
+
+```math
+\lambda \|\mathbf v\|_2^2 \le \mathbf v^T \mathbf H \mathbf v \le (\|\mathbf G\|^2 + \lambda) \|\mathbf v\|_2^2
+```
+
+3. By Rayleigh-Ritz quotient properties on symmetric positive definite matrices, every eigenvalue $\sigma_k(\mathbf H)$ satisfies:
+
+```math
+\lambda \le \sigma_k(\mathbf H) \le \|\mathbf G\|^2 + \lambda
+```
+
+4. The covariance matrix $\boldsymbol\Sigma = \sigma_\text{res}^2 \mathbf H^{-1}$ has eigenvalues:
+
+```math
+\frac{\sigma_\text{res}^2}{\|\mathbf G\|^2 + \lambda} \le \sigma_k(\boldsymbol\Sigma) \le \frac{\sigma_\text{res}^2}{\lambda}
+```
+
+5. Vertical spatial uncertainty $\sigma_z = \sqrt{\boldsymbol\Sigma_{33}}$ is strictly bounded between finite non-zero limits:
+
+```math
+0 < \frac{\sigma_\text{res}}{\sqrt{\|\mathbf G\|^2 + \lambda}} \le \sigma_z \le \frac{\sigma_\text{res}}{\sqrt{\lambda}} < \infty
+```
+
    proving that $\sigma_z$ cannot collapse to zero or diverge to infinity, guaranteeing well-posed 3D convergence without heuristic $10\text{ km}$ depth freezing.
 
 #### Lean 4 Formal Specification
@@ -664,7 +839,10 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
    *Venue*: *Science Advances*, 6(8), eaaz2582.  
    *DOI*: [10.1126/sciadv.aaz2582](https://doi.org/10.1126/sciadv.aaz2582)  
    *Core Equation*: Point-source magnitude scaling from initial $P$-wave displacement:
-   $$M = \alpha \log_{10}(P_d) + \beta \log_{10}(R) + \gamma$$
+
+```math
+M = \alpha \log_{10}(P_d) + \beta \log_{10}(R) + \gamma
+```
 
 2. **Kohler, M. D., Cochran, E. S., Given, D., et al. (2023)**  
    *Title*: "Performance of the ShakeAlert Earthquake Early Warning System during the 2019–2023 Operational Period."  
@@ -683,7 +861,10 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
    *Venue*: *arXiv preprint*.  
    *arXiv ID*: [arXiv:2408.06629](https://arxiv.org/abs/2408.06629)  
    *Core Equation*: Causal retention mechanism for real-time waveform streaming:
-   $$S_t = \gamma S_{t-1} + K_t^T V_t, \quad O_t = Q_t S_t$$
+
+```math
+S_t = \gamma S_{t-1} + K_t^T V_t, \quad O_t = Q_t S_t
+```
 
 ---
 
@@ -693,14 +874,20 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
    *Venue*: *Geophysical Journal International*, 216(1), 261–273.  
    *DOI*: [10.1093/gji/ggy423](https://doi.org/10.1093/gji/ggy423)  
    *Core Formulation*: Cross-entropy loss across 1D time-series segmentation channels:
-   $$\mathcal{L} = -\sum_{t=1}^T \sum_{k \in \{P, S, N\}} y_k(t) \log \hat{y}_k(t)$$
+
+```math
+\mathcal L = -\sum_{t=1}^T \sum_{k \in \lbrace P, S, N \rbrace} y_k(t) \log \hat y _k(t)
+```
 
 6. **Mousavi, S. M., Ellsworth, W. L., Zhu, W., Chuang, L. Y., & Beroza, G. C. (2020)**  
    *Title*: "Earthquake Transformer—An Attentive Deep-Learning Model for Simultaneous Earthquake Detection and Phase Picking."  
    *Venue*: *Nature Communications*, 11, 3952.  
    *DOI*: [10.1038/s41467-020-17591-w](https://doi.org/10.1038/s41467-020-17591-w)  
    *Core Mechanism*: Multi-head self-attention across 3-component seismic channels:
-   $$\operatorname{Attention}(Q, K, V) = \operatorname{softmax}\left( \frac{Q K^T}{\sqrt{d_k}} \right) V$$
+
+```math
+\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\left( \frac{Q K^T}{\sqrt{d_k}} \right) V
+```
 
 7. **Zhu, W., et al. (2024/2025)**  
    *Title*: "Towards End-to-End Earthquake Monitoring Using a Multitask Deep Learning Model."  
@@ -721,22 +908,29 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
    *Venue*: *Seismica*, 3(1), 1130. (Preprint: *arXiv:2310.11157*).  
    *DOI*: [10.26443/seismica.v3i1.1130](https://doi.org/10.26443/seismica.v3i1.1130)  
    *arXiv ID*: [arXiv:2310.11157](https://arxiv.org/abs/2310.11157)  
-   *Core Formulation*: Octree node refinement splitting space-time cell $\mathcal{C} = [x_1, x_2] \times [y_1, y_2] \times [z_1, z_2] \times [t_1, t_2]$ into 16 sub-octants if candidate pick support exceeds minimum threshold $N_{\text{picks}} \ge K_{\min}$.
+   *Core Formulation*: Octree node refinement splitting space-time cell $\mathcal C = [x_1, x_2] \times [y_1, y_2] \times [z_1, z_2] \times [t_1, t_2]$ into 16 sub-octants
+   if candidate pick support exceeds minimum threshold $N_{\text{picks}} \ge K_{\min}$.
 
 10. **Zhu, W., McBrearty, I. W., Mousavi, S. M., Ellsworth, W. L., & Beroza, G. C. (2022)**  
     *Title*: "Earthquake Phase Association Using a Bayesian Gaussian Mixture Model."  
     *Venue*: *Journal of Geophysical Research: Solid Earth*, 127(4), e2021JB023249.  
     *DOI*: [10.1029/2021JB023249](https://doi.org/10.1029/2021JB023249)  
     *arXiv ID*: [arXiv:2109.09008](https://arxiv.org/abs/2109.09008)  
-    *Core Equation*: Joint likelihood of arrival time $t_i$ and amplitude $A_i$ given event $k$:
-    $$p(t_i, A_i | k) = \mathcal{N}\left( t_i; t_k + T(\mathbf{x}_i, \mathbf{m}_k), \sigma_t^2 \right) \cdot \mathcal{N}\left( \log A_i; M_k - \gamma \log R_{ik}, \sigma_A^2 \right)$$
+    *Core Equation*: Joint likelihood of arrival time and amplitude $(t_i, A_i)$ given event $k$:
+
+```math
+p(t_i, A_i | k) = \mathcal N\left( t_i; t_k + T(\mathbf x _i, \mathbf m _k), \sigma_t^2 \right) \cdot \mathcal N\left( \log A_i; M_k - \gamma \log R_{ik}, \sigma_A^2 \right)
+```
 
 11. **Zhang, M., Ellsworth, W. L., & Beroza, G. C. (2019)**  
     *Title*: "Rapid Earthquake Association and Location: Application to the 2016 Guy-Greenbrier Earthquake Sequence."  
     *Venue*: *Seismological Research Letters*, 90(6), 2276–2284.  
     *DOI*: [10.1785/0220190052](https://doi.org/10.1785/0220190052)  
     *Core Mechanism*: Counting $P$ and $S$ arrivals within travel-time moveout window:
-    $$| (t_{S, i} - t_{P, i}) - (T_S(\mathbf{x}_i, \mathbf{m}) - T_P(\mathbf{x}_i, \mathbf{m})) | \le \Delta\tau_{\text{tol}}$$
+
+```math
+| (t_{S, i} - t_{P, i}) - (T_S(\mathbf x _i, \mathbf m) - T_P(\mathbf x _i, \mathbf m)) | \le \Delta\tau_{\text{tol}}
+```
 
 ---
 
@@ -746,28 +940,40 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
     *Venue*: *Seismological Research Letters*, 70(2), 154–160.  
     *DOI*: [10.1785/gssrl.70.2.154](https://doi.org/10.1785/gssrl.70.2.154)  
     *Core Formulation*: Slowness integration for radial Earth models:
-    $$\tau(p) = 2 \int_{r_b}^{r_t} \left( \frac{1}{v(r)^2} - \frac{p^2}{r^2} \right)^{1/2} dr$$
+
+```math
+\tau(p) = 2 \int_{r_b}^{r_t} \left( \frac{1}{v(r)^2} - \frac{p^2}{r^2} \right)^{1/2} dr
+```
 
 13. **Huber, P. J. (1964)**  
     *Title*: "Robust Estimation of a Location Parameter."  
     *Venue*: *The Annals of Mathematical Statistics*, 35(1), 73–101.  
     *DOI*: [10.1214/aoms/1177703732](https://doi.org/10.1214/aoms/1177703732)  
     *Core Equation*: Hybrid $\ell_1/\ell_2$ convex M-estimator cost function:
-    $$\rho_\epsilon(r) = \begin{cases} \frac{1}{2} r^2 & |r| \le \epsilon \\ \epsilon |r| - \frac{1}{2} \epsilon^2 & |r| > \epsilon \end{cases}$$
+
+```math
+\rho_\epsilon(r) = \begin{cases} \frac{1}{2} r^2 & |r| \le \epsilon \\ \epsilon |r| - \frac{1}{2} \epsilon^2 & |r| > \epsilon \end{cases}
+```
 
 14. **Um, J., & Thurber, C. (1987)**  
     *Title*: "A Fast Algorithm for Two-Point Seismic Ray Tracing."  
     *Venue*: *Bulletin of the Seismological Society of America*, 77(3), 972–986.  
     *DOI*: [10.1785/BSSA0770030972](https://doi.org/10.1785/BSSA0770030972)  
     *Core Formulation*: Midpoint perturbation minimizing path travel-time:
-    $$\mathbf{x}_{\text{mid}}^{(k+1)} = \mathbf{x}_{\text{mid}}^{(k)} + \frac{L^2}{8 c} \left[ \nabla v - (\nabla v \cdot \hat{\mathbf{t}}) \hat{\mathbf{t}} \right]$$
+
+```math
+\mathbf x _{\text{mid}}^{(k+1)} = \mathbf x _{\text{mid}}^{(k)} + \frac{L^2}{8 c} \left[ \nabla v - (\nabla v \cdot \hat{\mathbf t}) \hat{\mathbf t} \right]
+```
 
 15. **Waldhauser, F., & Ellsworth, W. L. (2000)**  
     *Title*: "A Double-Difference Earthquake Location Algorithm: Method and Application to the Northern Hayward Fault, California."  
     *Venue*: *Bulletin of the Seismological Society of America*, 90(6), 1353–1368.  
     *DOI*: [10.1785/0120000006](https://doi.org/10.1785/0120000006)  
     *Core Formulation*: Residual difference between neighboring events $j, k$ recorded at station $i$:
-    $$(t_i^j - t_i^k)^{\text{obs}} - (t_i^j - t_i^k)^{\text{pred}} = \frac{\partial t_i^j}{\partial \mathbf{m}} \Delta \mathbf{m}^j - \frac{\partial t_i^k}{\partial \mathbf{m}} \Delta \mathbf{m}^k$$
+
+```math
+(t_i^j - t_i^k)^{\text{obs}} - (t_i^j - t_i^k)^{\text{pred}} = \frac{\partial t_i^j}{\partial \mathbf m} \Delta \mathbf m ^j - \frac{\partial t_i^k}{\partial \mathbf m} \Delta \mathbf m ^k
+```
 
 ---
 
@@ -777,13 +983,17 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
     *Venue*: *USGS Techniques and Methods*, Book 12, Chapter A1.  
     *DOI*: [10.3133/tm12A1](https://doi.org/10.3133/tm12A1)  
     *Core Formulation*: Conditional multivariate normal interpolation combining station recordings with GMPE prior:
-    $$\boldsymbol{\mu}_{y | x} = \boldsymbol{\mu}_y + \boldsymbol{\Sigma}_{yx} \boldsymbol{\Sigma}_{xx}^{-1} (\mathbf{x} - \boldsymbol{\mu}_x), \quad \boldsymbol{\Sigma}_{y | x} = \boldsymbol{\Sigma}_{yy} - \boldsymbol{\Sigma}_{yx} \boldsymbol{\Sigma}_{xx}^{-1} \boldsymbol{\Sigma}_{xy}$$
+
+```math
+\boldsymbol\mu _{y | x} = \boldsymbol\mu _y + \boldsymbol\Sigma _{yx} \boldsymbol\Sigma _{xx}^{-1} (\mathbf x - \boldsymbol\mu _x), \quad \boldsymbol\Sigma _{y | x} = \boldsymbol\Sigma _{yy} - \boldsymbol\Sigma _{yx} \boldsymbol\Sigma _{xx}^{-1} \boldsymbol\Sigma _{xy}
+```
 
 17. **Worden, C. B., Gerstenberger, M. C., Rhoades, D. A., & Wald, D. J. (2012)**  
     *Title*: "Probabilistic Relationships between Ground-Motion Parameters and Modified Mercalli Intensity in California."  
     *Venue*: *Bulletin of the Seismological Society of America*, 102(1), 204–221.  
     *DOI*: [10.1785/0120110156](https://doi.org/10.1785/0120110156)  
-    *Core Formulation*: Piecewise bilinear transformation from $\log_{10}(\text{PGA})$ and $\log_{10}(\text{PGV})$ to Instrumental MMI.
+    *Core Formulation*: Piecewise bilinear transformation from $\log_{10}(\text{PGA})$
+    and $\log_{10}(\text{PGV})$ to Instrumental MMI.
 
 18. **Boore, D. M., Stewart, J. P., Seyhan, E., & Atkinson, G. M. (2014)**  
     *Title*: "NGA-West2 Equations for Predicting PGA, PGV, and 5% Damped PSA for Shallow Crustal Earthquakes."  
@@ -793,7 +1003,8 @@ theorem damped_normal_strict_coercivity_and_depth_bounds (N : ℕ)
 19. **Japan Meteorological Agency (1996)**  
     *Title*: "Calculation Method of the Instrumental Seismic Intensity (Shindo)."  
     *Venue*: *JMA Technical Report*.  
-    *Core Algorithm*: Vector acceleration magnitude duration threshold $a_0$ at cumulative time $\tau = 0.3\text{ s}$ via bandpass filter $F(f) = f^{-1/2} (1 + 0.694(f/f_0)^2)^{-1/2} (1 - \exp(-(f/f_c)^3))^{1/2}$.
+    *Core Algorithm*: Vector acceleration magnitude duration threshold $a_0$ at cumulative time $\tau = 0.3\text{ s}$ via bandpass filter
+    $F(f) = f^{-1/2} (1 + 0.694(f/f_0)^2)^{-1/2} (1 - \exp(-(f/f_c)^3))^{1/2}$.
 
 20. **Zhang, Y., et al. (2024)**  
     *Title*: "QuakeFormer: A Uniform Approach to Earthquake Ground Motion Prediction Using Masked Transformers."  

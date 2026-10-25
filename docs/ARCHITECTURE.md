@@ -58,14 +58,14 @@ QuakeSnail is a next-generation real-time earthquake monitoring, phase-associati
 | 5 | Multi-Band Waveform Filtering | 3-band parallel filtering (2-5 Hz, 0.4-5 Hz, 0.01-5 Hz) with Beltrami exterior-curl preservation | M2 | ORIGINAL_REQUEST §R2 |
 | 6 | 3-Point Discrete Morse Impulse Gate | $\Delta_- v \cdot \Delta_+ v > 0$ critical-point detection | M2 | ORIGINAL_REQUEST §R2 |
 | 7 | 1-Sample Causal Deferral Filter | `pending_impulse` resolving to `glint_rejected` vs `p_wave_onset` | M2 | ORIGINAL_REQUEST §R2 |
-| 8 | Microseism Splitter | $\mathcal{H}_{\text{clock}} \oplus \mathcal{H}_{\text{nope}}$ stationary oceanic swell quarantine | M2 | ORIGINAL_REQUEST §R2 |
+| 8 | Microseism Splitter | $\mathcal H _{\text{clock}} \oplus \mathcal H _{\text{nope}}$ stationary oceanic swell quarantine | M2 | ORIGINAL_REQUEST §R2 |
 | 9 | Skew-Symmetric $\mathfrak{so}(C)$ Association | Deterministic bilinear triad tie-breaker with $0.000\text{e}+00$ spherical radial drift | M2 | ORIGINAL_REQUEST §R2 |
 | 10 | Cluster Anti-Stealing & S-Wave Protection | Ring-buffer wavefront association eliminating cluster thrash and false S-wave splits | M2 | survey_gq |
 | 11 | Coarse Fibonacci Seed | Fast spherical grid seeding (64-500 nodes) for global hypocenter initialization | M2 | survey_siblings |
 | 12 | 3D Global Spherical Raytracing | 3-point pseudo-bending across 1D PREM + 3D subducting slab + 3D plume for P, S, PmP, PcP, PKP, PKIKP | M2 | survey_siblings |
 | 13 | $\text{SO}(6)$ Kelvin-Mandel Stiffness Rotors | Isometric Voigt stiffness rotations preserving elastic energy and tensor trace | M2 | survey_siblings |
 | 14 | Damped Huber-IRLS Inversion | Robust $C^{1,1}$ convex M-estimation converging without 10 km depth collapse | M2 | survey_lit |
-| 15 | Multi-Band Magnitude Estimation | Real-time calculation of $M_w$, $M_{\text{default}}$, $M_{\text{low}}$, and $M_{\text{ultralow}}$ | M2 | ORIGINAL_REQUEST §R2 |
+| 15 | Multi-Band Magnitude Estimation | Real-time calculation of $(M_w, M_{\text{default}}, M_{\text{low}}, M_{\text{ultralow}})$ | M2 | ORIGINAL_REQUEST §R2 |
 | 16 | Analytical Confidence Ellipsoids | Strict positive-definite $4 \times 4$ covariance $\boldsymbol{\Sigma} = \hat{\sigma}^2 \mathbf{H}^{-1}$ without 256-ray marching | M2 | survey_lit |
 | 17 | Streaming & Replay Feeds | Live SeedLink/FDSN/USGS streaming and deterministic miniSEED/scenario replay | M2 | ORIGINAL_REQUEST §R2 |
 | 18 | Strict Elimination of "People Felt" Counters | Complete purge of `countFelt`, `countStrong`, and `atan` population multipliers | M3 | survey_gq |
@@ -194,15 +194,15 @@ To avoid reinventing foundational algorithms or incurring unnecessary allocation
 1. **`stylo` (`darksnail_tracker_rs`)**:
    - Pre-allocated cache-resident static memory arena (`TrackerStateArena` $\to$ `QuakeSnailArena`, $< 2.0\text{ MB}$ SRAM).
    - 3-point discrete Morse impulse gating ($\Delta_- v \cdot \Delta_+ v > 0$) combined with 1-sample causal deferral (`pending_impulse` $\to$ `glint_rejected` vs `p_wave_onset`) to reject SeedLink telemetry glitches and packet dropouts before cluster creation.
-   - Continuous mass/energy continuity decomposition ($\mathcal{H}_{\text{clock}} \oplus \mathcal{H}_{\text{nope}}$) quarantining cyclic stationary microseisms and ocean swell noise.
-   - $\mathfrak{so}(C)$ skew-symmetric bilinear triad operator ($B_W(u, v)$) resolving multi-target / multi-wavefront association ties with $0.000\text{e}+00$ spherical radial drift.
+   - Continuous mass/energy continuity decomposition ($\mathcal H _{\text{clock}} \oplus \mathcal H _{\text{nope}}$) quarantining cyclic stationary microseisms and ocean swell noise.
+   - $\mathfrak{so}(C)$ skew-symmetric bilinear triad operator $B_W(u, v)$ resolving multi-target / multi-wavefront association ties with $0.000\text{e}+00$ spherical radial drift.
    - Zero-copy C-ABI `extern "C"` ctypes bridge with runtime fallback and auto-compilation.
 
 2. **`g3vm` (`g3vm v0.6.0 / v0.7.0`)**:
    - 3D minimum-time bent raytracing (Um & Thurber 1987 3-point pseudo-bending) across 1D PREM + 3D subducting slab + 3D thermal mantle plume for phases `P`, `S`, `PmP`, `PcP`, `PKP`, `PKIKP`.
    - $\text{SO}(6)$ Kelvin-Mandel Voigt stiffness tensor rotors ($M(R) \in \text{SO}(6)$ lifted from bedding dip/azimuth in $\text{SO}(3)$) for exact isometric TTI anisotropic velocity corrections across subducting slab interfaces.
    - Damped Huber-IRLS / Ridge residual minimization for robust hypocenter inversion without heuristic 10 km depth pinning.
-   - DarkSnail Double-Difference LET (`BlindG3VM-LET`) decoupling event origin times and station clock drift into $\mathcal{H}_{\text{clock}}$ while keeping active heap $< 2.0\text{ MB}$.
+   - DarkSnail Double-Difference LET (`BlindG3VM-LET`) decoupling event origin times and station clock drift into $\mathcal H _{\text{clock}}$ while keeping active heap $< 2.0\text{ MB}$.
    - Mode A (oracle) vs. Mode B (zero-leakage blind noise benchmark) evaluation harness.
 
 3. **`oatse` (`oatse`)**:
@@ -356,14 +356,22 @@ const _: () = assert!(core::mem::size_of::<QuakeSnailArena>() <= 2_097_152);
 
 In `GlobalQuake` (`BetterAnalysis.java`), filtering is performed via single-pole recursive leaky integrators that lack sharp bandpass roll-off. In `rust/quakesnail_rs`, filtering uses second-order biquad IIR filters in Direct Form II Transposed:
 
-$$y[t] = b_0 x[t] + d_1[t-1]$$
-$$d_1[t] = b_1 x[t] - a_1 y[t] + d_2[t-1]$$
-$$d_2[t] = b_2 x[t] - a_2 y[t]$$
+```math
+y[t] = b_0 x[t] + d_1[t-1]
+```
+
+```math
+d_1[t] = b_1 x[t] - a_1 y[t] + d_2[t-1]
+```
+
+```math
+d_2[t] = b_2 x[t] - a_2 y[t]
+```
 
 The three standard monitoring bands are:
-1. **Default Band**: $2.0\text{--}5.0\text{ Hz}$ (sharp regional P-wave onsets, local events).
-2. **Low-Frequency Band**: $0.4\text{--}5.0\text{ Hz}$ (teleseismic P/S waves, intermediate magnitudes $M 4.5\text{--}6.5$).
-3. **Ultra-Low-Frequency Band**: $0.01\text{--}5.0\text{ Hz}$ (large teleseisms $M 6.5+$, PKIKP core phases, long-period mantle waves).
+1. **Default Band**: $2.0\text{–}5.0\text{ Hz}$ (sharp regional P-wave onsets, local events).
+2. **Low-Frequency Band**: $0.4\text{–}5.0\text{ Hz}$ (teleseismic P/S waves, intermediate magnitudes $M 4.5\text{–}6.5$).
+3. **Ultra-Low-Frequency Band**: $0.01\text{–}5.0\text{ Hz}$ (large teleseisms $M 6.5+$, PKIKP core phases, long-period mantle waves).
 
 On `x86_64` (AVX2), 8 station channels are filtered simultaneously via `_mm256_fmadd_ps`.
 
@@ -375,45 +383,73 @@ On `x86_64` (AVX2), 8 station channels are filtered simultaneously via `_mm256_f
 Telemetry streams from SeedLink / FDSN networks suffer from intermittent single-sample spikes, packet bit-flips, or lost packet retransmissions. In legacy `GlobalQuake`, a single erroneous spike drives $\text{STA}/\text{LTA} > 4.75$, producing a phantom pick and false cluster.
 
 Let $v_t$ be the waveform amplitude or the instantaneous $\text{STA}/\text{LTA}$ ratio at sample $t$. We define the one-sided forward and backward differences:
-$$\Delta_- v_t = v_t - v_{t-1}, \quad \Delta_+ v_t = v_t - v_{t+1}$$
+
+```math
+\Delta_- v_t = v_t - v_{t-1}, \quad \Delta_+ v_t = v_t - v_{t+1}
+```
 
 The 3-point discrete Morse critical-point impulse product is:
-$$I_{\text{Morse}}(v_t) = \Delta_- v_t \cdot \Delta_+ v_t = (v_t - v_{t-1})(v_t - v_{t+1})$$
+
+```math
+I_{\text{Morse}}(v_t) = \Delta_- v_t \cdot \Delta_+ v_t = (v_t - v_{t-1})(v_t - v_{t+1})
+```
 
 By Theorem 7d (`morseImpulse_iff_strict_extremum` in `OcclusionTriad.lean`):
-$$I_{\text{Morse}}(v_t) > 0 \iff v_t \text{ is a strict local extremum (peak or trough)}$$
+
+```math
+I_{\text{Morse}}(v_t) > 0 \iff v_t \text{ is a strict local extremum (peak or trough)}
+```
+
 For monotone slopes (compaction, tectonic drift, or legitimate emergent P-wave buildup), $I_{\text{Morse}} \le 0$.
 
 #### Causal Deferral State Machine
 Because $v_{t+1}$ is unavailable at time $t$, causal evaluation requires a 1-sample deferral:
-1. **At sample $t$**:
+1. **At sample** $t$:
    Compute backward innovation:
-   $$\delta_t = |v_t - v_{t-1}|$$
-   If $\delta_t > \gamma_{\text{spike}} \cdot \sigma_v$ (where $\gamma_{\text{spike}} \ge 4.0$):
+
+```math
+\delta_t = |v_t - v_{t-1}|
+```
+
+   If $\delta_t > \gamma_{\text{spike}} \cdot \sigma_v$
+   (where $\gamma_{\text{spike}} \ge 4.0$):
    - Set channel state: `gate_state = CLASSIFICATION_PENDING_IMPULSE`.
    - Store $v_t$ in `pending_val`.
    - **Do not** create a pick or trigger cluster creation at sample $t$. Hold nominal tracking.
-2. **At sample $t+1$**:
+2. **At sample** $t+1$:
    Evaluate forward step:
-   $$\Delta_- = v_t - v_{t-1}, \quad \Delta_+ = v_t - v_{t+1}$$
+
+```math
+\Delta_- = v_t - v_{t-1}, \quad \Delta_+ = v_t - v_{t+1}
+```
+
    - **Case A: Isolated Glint (`GLINT_REJECTED`)**:
-     If $|v_{t+1} - v_{t-1}| \le \epsilon_{\text{base}}$ and $I_{\text{Morse}} > 0$:
+     If $|v_{t+1} - v_{t-1}| \le \epsilon_{\text{base}}$
+     and $I_{\text{Morse}} > 0$:
      The spike at sample $t$ was an isolated single-sample packet glitch. Discard `pending_val`, set `gate_state = CLASSIFICATION_NOMINAL`, and report `CLASSIFICATION_GLINT_REJECTED`. `0` false picks generated.
    - **Case B: True Seismic Onset (`P_WAVE_ONSET`)**:
-     If $|v_{t+1} - v_t| \le \epsilon_{\text{step}}$ (high sustained energy) and $|v_{t+1} - v_{t-1}| > \gamma_{\text{spike}} \cdot \sigma_v$:
+     If $|v_{t+1} - v_t| \le \epsilon_{\text{step}}$ (high sustained energy)
+     and $|v_{t+1} - v_{t-1}| > \gamma_{\text{spike}} \cdot \sigma_v$:
      The arrival represents a genuine impulsive wavefront onset. Set `gate_state = CLASSIFICATION_NOMINAL`, report `CLASSIFICATION_P_WAVE_ONSET`, and emit a validated pick with arrival time $t_0 = t$.
 
 ---
 
-### 2.4 Stage 1: Stationary Microseism Quarantine ($\mathcal{H}_{\text{clock}} \oplus \mathcal{H}_{\text{nope}}$)
+### 2.4 Stage 1: Stationary Microseism Quarantine ($\mathcal H _{\text{clock}} \oplus \mathcal H _{\text{nope}}$)
 
-Continuous oceanic swell and standing-wave microseisms ($0.1\text{--}0.3\text{ Hz}$) exhibit near-periodic cyclic continuity:
-$$v_{t+1}(s) \approx v_{t-k}(s)$$
+Continuous oceanic swell and standing-wave microseisms ($0.1\text{–}0.3\text{ Hz}$) exhibit near-periodic cyclic continuity:
+
+```math
+v_{t+1}(s) \approx v_{t-k}(s)
+```
 
 `TemporalClockContentSplitter` evaluates the cyclic autocorrelation:
-$$R_k(s) = \frac{\sum_{\tau=0}^{K} v_{t-\tau}(s) v_{t-\tau-k}(s)}{\sum_{\tau=0}^K v_{t-\tau}^2(s) + \epsilon}$$
 
-If $\max_{k \in [k_{\min}, k_{\max}]} R_k(s) > 0.85$ and trade-off dissipation is zero, station $s$ is flagged in `clock_mask` ($\mathcal{H}_{\text{clock}}$) as contaminated by standing microseisms. Its $\text{STA}/\text{LTA}$ pick threshold is dynamically elevated by factor $\Phi^{-1}(\Delta t)$, preventing stationary microseisms from triggering spurious earthquakes.
+```math
+R_k(s) = \frac{\sum_{\tau=0}^{K} v_{t-\tau}(s) v_{t-\tau-k}(s)}{\sum_{\tau=0}^K v_{t-\tau}^2(s) + \epsilon}
+```
+
+If $\max_{k \in [k_{\min}, k_{\max}]} R_k(s) > 0.85$ and trade-off dissipation is zero,
+station $s$ is flagged in `clock_mask` ($\mathcal H _{\text{clock}}$) as contaminated by standing microseisms. Its $\text{STA}/\text{LTA}$ pick threshold is dynamically elevated by factor $\Phi^{-1}(\Delta t)$, preventing stationary microseisms from triggering spurious earthquakes.
 
 ---
 
@@ -488,7 +524,11 @@ pub unsafe extern "C" fn quakesnail_invert_hypocenter_huber(
 
 ### 3.1 1D Radial Preliminary Reference Earth Model (PREM)
 
-For global raytracing, radial distance $r \in [0, R_E]$ (with $R_E = 6371.0\text{ km}$) is normalized by $x = r / R_E$. Background compressional slowness $u(r) = 1 / V_p(r)$ and shear slowness $u_s(r) = 1 / V_s(r)$ follow the Dziewonski & Anderson (1981) PREM polynomial specifications:
+For global raytracing, radial distance $r \in [0, R_E]$
+(with $R_E = 6371.0\text{ km}$)
+is normalized by $x = r / R_E$.
+Background compressional slowness $u(r) = 1 / V_p(r)$
+and shear slowness $u_s(r) = 1 / V_s(r)$ follow the Dziewonski & Anderson (1981) PREM polynomial specifications:
 
 ```python
 # quakesnail/raytrace.py
@@ -520,28 +560,51 @@ def prem_vp_kms(r_km: float) -> float:
 ### 3.2 3D Spherical Perturbations: Subducting Slab & Thermal Mantle Plume
 
 The 3D velocity field is:
-$$V_p(\mathbf{x}) = V_{p,\text{PREM}}(\|\mathbf{x}\|) \cdot \bigl(1 + \delta_{\text{slab}}(\mathbf{x}) + \delta_{\text{plume}}(\mathbf{x})\bigr)$$
 
-1. **Cold Subducting Slab ($\Delta V_p / V_p \approx +3.5\%$)**:
-   Defined as a tilted tabular plane with normal $\hat{\mathbf{n}}_{\text{slab}} = (\sin\theta\cos\phi, \sin\theta\sin\phi, \cos\theta)$ dipping at angle $\theta$ along azimuth $\phi$:
-   $$\delta_{\text{slab}}(\mathbf{x}) = +0.035 \cdot \exp\left(-\frac{\text{dist}(\mathbf{x}, \text{SlabPlane})^2}{2 \sigma_{\text{slab}}^2}\right) \cdot \mathbb{I}(z \le z_{\max})$$
-2. **Deep Thermal Mantle Plume ($\Delta V_p / V_p \approx -3.0\%$)**:
+```math
+V_p(\mathbf x) = V_{p,\text{PREM}}(\|\mathbf x\|) \cdot \bigl(1 + \delta_{\text{slab}}(\mathbf x) + \delta_{\text{plume}}(\mathbf x)\bigr)
+```
+
+1. **Cold Subducting Slab** ($\Delta V_p / V_p \approx +3.5\%$):
+   Defined as a tilted tabular plane with normal $\hat{\mathbf n} _{\text{slab}} = (\sin\theta\cos\phi, \sin\theta\sin\phi, \cos\theta)$ dipping at angle $\theta$ along azimuth $\phi$:
+
+```math
+\delta_{\text{slab}}(\mathbf x) = +0.035 \cdot \exp\left(-\frac{\text{dist}(\mathbf x, \text{SlabPlane})^2}{2 \sigma_{\text{slab}}^2}\right) \cdot \mathbb I(z \le z_{\max})
+```
+
+2. **Deep Thermal Mantle Plume** ($\Delta V_p / V_p \approx -3.0\%$):
    Rising vertically from the Core-Mantle Boundary ($r_{\text{CMB}} = 3480\text{ km}$) to the upper mantle:
-   $$\delta_{\text{plume}}(\mathbf{x}) = -0.030 \cdot \exp\left(-\frac{\|\mathbf{x}_\perp - \mathbf{x}_{\text{plume}}\|^2}{2 R_{\text{plume}}^2}\right)$$
+
+```math
+\delta_{\text{plume}}(\mathbf x) = -0.030 \cdot \exp\left(-\frac{\|\mathbf x _\perp - \mathbf x _{\text{plume}}\|^2}{2 R_{\text{plume}}^2}\right)
+```
 
 ---
 
 ### 3.3 3-Point Minimum-Time Pseudo-Bending Raytracer (Um & Thurber)
 
-Let a 3D ray path connecting hypocenter $\mathbf{x}_S$ to station $\mathbf{x}_R$ be discretized into $N$ points $\{\mathbf{x}_0 = \mathbf{x}_S, \mathbf{x}_1, \dots, \mathbf{x}_{N-1} = \mathbf{x}_R\}$.
-For each three consecutive points $(\mathbf{x}_{k-1}, \mathbf{x}_k, \mathbf{x}_{k+1})$, let the chord length be:
-$$L = \|\mathbf{x}_{k+1} - \mathbf{x}_{k-1}\|$$
-and unit tangent vector:
-$$\hat{\mathbf{t}}_k = \frac{\mathbf{x}_{k+1} - \mathbf{x}_{k-1}}{L}$$
+Let a 3D ray path connecting hypocenter $\mathbf x _S$
+to station $\mathbf x _R$
+be discretized into $N$ points $\{\mathbf x _0 = \mathbf x _S, \mathbf x _1, \dots, \mathbf x _{N-1} = \mathbf x _R\}$.
+For each three consecutive points $(\mathbf x _{k-1}, \mathbf x _k, \mathbf x _{k+1})$, let the chord length be:
 
-The minimum-time pseudo-bending perturbation vector $\mathbf{d}_k$ is:
-$$\mathbf{d}_k = -\frac{L^2}{8} \left[ \frac{\nabla u(\mathbf{x}_k)}{u(\mathbf{x}_k)} - \left(\frac{\nabla u(\mathbf{x}_k)}{u(\mathbf{x}_k)} \cdot \hat{\mathbf{t}}_k\right) \hat{\mathbf{t}}_k \right]$$
-where $u(\mathbf{x}) = 1 / V_p(\mathbf{x})$ is the 3D slowness field and $\nabla u(\mathbf{x})$ is evaluated via 3D central differences.
+```math
+L = \|\mathbf x _{k+1} - \mathbf x _{k-1}\|
+```
+
+and unit tangent vector:
+
+```math
+\hat{\mathbf t} _k = \frac{\mathbf x _{k+1} - \mathbf x _{k-1}}{L}
+```
+
+The minimum-time pseudo-bending perturbation vector $\mathbf d _k$ is:
+
+```math
+\mathbf d _k = -\frac{L^2}{8} \left[ \frac{\nabla u(\mathbf x _k)}{u(\mathbf x _k)} - \left(\frac{\nabla u(\mathbf x _k)}{u(\mathbf x _k)} \cdot \hat{\mathbf t} _k\right) \hat{\mathbf t} _k \right]
+```
+
+where $u(\mathbf x) = 1 / V_p(\mathbf x)$ is the 3D slowness field and $\nabla u(\mathbf x)$ is evaluated via 3D central differences.
 
 #### Phase Path Geometry
 - **Direct P & S**: Straight-line chord initialization followed by 8–16 iterations of pseudo-bending.
@@ -558,19 +621,32 @@ Grounded in `g3vm/g3vm/anisotropy.py` and `formalization/OcclusionTriad.lean` (T
 When seismic rays traverse subducting lithospheric slabs, preferred olivine crystal alignment creates strong Transverse Isotropy with Tilted Axis (TTI). Rotating the standard $6 \times 6$ Voigt stiffness matrix $C_{ij}$ using standard Bond transformation matrices produces Frobenius norm drift and non-orthogonal distortion.
 
 QuakeSnail uses the **Kelvin-Mandel normalized basis**:
-$$\boldsymbol{\sigma}_{\text{KM}} = \left(\sigma_{11}, \sigma_{22}, \sigma_{33}, \sqrt{2}\sigma_{23}, \sqrt{2}\sigma_{13}, \sqrt{2}\sigma_{12}\right)^T$$
+
+```math
+\boldsymbol\sigma _{\text{KM}} = \left(\sigma_{11}, \sigma_{22}, \sigma_{33}, \sqrt{2}\sigma_{23}, \sqrt{2}\sigma_{13}, \sqrt{2}\sigma_{12}\right)^T
+```
 
 Given slab bedding dip $\theta$ and azimuth $\phi$, the 3D rotation matrix $R \in \text{SO}(3)$ is lifted to the exact 6D orthogonal rotor $M(R) \in \text{SO}(6)$:
 
-$$M(R)^T M(R) = I_6, \quad \det(M(R)) = +1$$
+```math
+M(R)^T M(R) = I_6, \quad \det(M(R)) = +1
+```
 
 The rotated 3D TTI stiffness tensor is:
-$$C_{\text{TTI}} = M(R) \, C_{\text{VTI}} \, M(R)^T$$
+
+```math
+C_{\text{TTI}} = M(R) \, C_{\text{VTI}} \, M(R)^T
+```
+
 guaranteeing:
-1. Exact preservation of elastic strain energy: $\frac{1}{2} \boldsymbol{\epsilon}^T C \boldsymbol{\epsilon} = \frac{1}{2} \boldsymbol{\epsilon}'^T C' \boldsymbol{\epsilon}'$.
+1. Exact preservation of elastic strain energy: $\frac{1}{2} \boldsymbol\epsilon^T C \boldsymbol\epsilon = \frac{1}{2} \boldsymbol\epsilon'^T C' \boldsymbol\epsilon'$.
 2. Strict conservation of tensor trace: $\text{Tr}(C_{\text{TTI}}) = \text{Tr}(C_{\text{VTI}})$.
-3. Exact directional phase velocity along ray tangent $\hat{\mathbf{t}} = (\sin\psi\cos\alpha, \sin\psi\sin\alpha, \cos\psi)$:
-   $$V_p(\psi) = V_{p0} \left(1 + \delta \sin^2\psi \cos^2\psi + \epsilon \sin^4\psi\right)$$
+3. Exact directional phase velocity along ray tangent $\hat{\mathbf t} = (\sin\psi\cos\alpha, \sin\psi\sin\alpha, \cos\psi)$:
+
+```math
+V_p(\psi) = V_{p0} \left(1 + \delta \sin^2\psi \cos^2\psi + \epsilon \sin^4\psi\right)
+```
+
    where $\epsilon, \delta$ are Thomsen parameters.
 
 ---
@@ -583,31 +659,59 @@ QuakeSnail replaces this with a two-stage coarse-to-fine solver:
 
 #### Stage A: Fibonacci-Sphere Coarse Seeding
 Generates $K = 64$ quasi-uniform candidate epicenters distributed around the centroid of the earliest 4 arriving stations:
-$$z_i = 1 - \frac{2i}{K - 1}, \quad \text{lat}_i = \arcsin(z_i)$$
-$$\text{lon}_i = \left(\text{lon}_0 + i \cdot \frac{2\pi}{\Phi^2}\right) \pmod{2\pi}, \quad \Phi = \frac{1 + \sqrt{5}}{2}$$
+
+```math
+z_i = 1 - \frac{2i}{K - 1}, \quad \text{lat} _i = \arcsin(z_i)
+```
+
+```math
+\text{lon} _i = \left(\text{lon} _0 + i \cdot \frac{2\pi}{\Phi^2}\right) \pmod{2\pi}, \quad \Phi = \frac{1 + \sqrt{5}}{2}
+```
+
 For each candidate, coarse origin time is evaluated analytically via median arrival time residual:
-$$t_{0, i} = \text{median}_{j \in \text{picks}} \left(T_j - T_{\text{calc}}(\mathbf{x}_i, \mathbf{s}_j)\right)$$
-The candidate with minimum Huber residual is chosen as the seed $\mathbf{m}^{(0)} = (\text{lat}_0, \text{lon}_0, z_0, t_0)$.
+
+```math
+t_{0, i} = \text{median} _{j \in \text{picks}} \left(T_j - T_{\text{calc}}(\mathbf x _i, \mathbf s _j)\right)
+```
+
+The candidate with minimum Huber residual is chosen as the seed $\mathbf m ^{(0)} = (\text{lat} _0, \text{lon} _0, z_0, t_0)$.
 
 #### Stage B: Damped Huber-IRLS / Ridge Residual Refinement
-Given parameter vector $\mathbf{m} = (x, y, z, t_0)^T$, the linearized system is:
-$$G \Delta \mathbf{m} = \mathbf{r}$$
-where $G_{j, 1:3} = \nabla_{\mathbf{x}} T_{\text{calc}}(\mathbf{m}, \mathbf{s}_j) = \frac{\hat{\mathbf{t}}_{\text{hypo}, j}}{V(\mathbf{x}_{\text{hypo}})}$ and $G_{j, 4} = 1$.
+Given parameter vector $\mathbf m = (x, y, z, t_0)^T$, the linearized system is:
+
+```math
+G \Delta \mathbf m = \mathbf r
+```
+
+where $G_{j, 1:3} = \nabla_{\mathbf x} T_{\text{calc}}(\mathbf m, \mathbf s _j) = \frac{\hat{\mathbf t} _{\text{hypo}, j}}{V(\mathbf x _{\text{hypo}})}$
+and $G_{j, 4} = 1$.
 
 To prevent outlier picks (e.g. late scattered arrivals or undetected secondary S-wave noise) from corrupting the hypocenter, weights are assigned via Huber loss:
-$$w_j = \begin{cases}
+
+```math
+w_j = \begin{cases}
 1.0 & |r_j| \le \delta_{\text{Huber}} \\
 \frac{\delta_{\text{Huber}}}{|r_j|} & |r_j| > \delta_{\text{Huber}}
-\end{cases}$$
+\end{cases}
+```
+
 where $\delta_{\text{Huber}} = 1.345 \cdot \text{MAD}(r)$.
 
 The regularized update is:
-$$\Delta \mathbf{m} = \left(G^T W G + \lambda_{\text{Ridge}} D\right)^{-1} G^T W \mathbf{r}$$
+
+```math
+\Delta \mathbf m = \left(G^T W G + \lambda_{\text{Ridge}} D\right)^{-1} G^T W \mathbf r
+```
+
 where $D = \text{diag}(1, 1, 4, 0.1)$ places higher damping on vertical depth trade-offs.
 
 #### Analytical 3D Covariance Ellipsoid
 The posterior parameter covariance matrix is:
-$$C_{\mathbf{m}} = \hat{\sigma}^2 \left(G^T W G + \lambda_{\text{Ridge}} D\right)^{-1}$$
+
+```math
+C_{\mathbf m} = \hat{\sigma}^2 \left(G^T W G + \lambda_{\text{Ridge}} D\right)^{-1}
+```
+
 Eigenvalues of the upper $3 \times 3$ block yield semi-major axes $(a, b, c)$ of the 3D location confidence ellipsoid (horizontal error ellipse and vertical depth uncertainty $\sigma_z$).
 
 ---
@@ -615,15 +719,25 @@ Eigenvalues of the upper $3 \times 3$ block yield semi-major axes $(a, b, c)$ of
 ### 3.6 DarkSnail Double-Difference LET with $\mathfrak{so}(C)$ Anti-Smearing
 
 For earthquake clusters or aftershock swarms, relative travel-time differences between event pairs $(i, j)$ at common station $k$:
-$$\Delta t_{i, j, k} = (T_{i, k} - T_{j, k})^{\text{obs}} - (T_{i, k} - T_{j, k})^{\text{calc}}$$
-satisfy:
-$$G_{\text{hypo}} \Delta \mathbf{m} + G_{\text{velo}} \delta\mathbf{u} = \mathbf{r}$$
 
-1. **Clock Subspace Projection ($\mathcal{H}_{\text{clock}}$)**:
-   Relative origin-time shifts $(\Delta t_{0, i} - \Delta t_{0, j})$ and station clock drifts project into $\mathcal{H}_{\text{clock}}$.
-2. **$\mathfrak{so}(C)$ Triad Tie-Breaking**:
-   Trade-offs between vertical focal depth $\Delta z_i$ and regional mantle velocity slowness $\delta u(z)$ are resolved via $B_W(u, v) \in \mathfrak{so}(C)$ with tangent orthogonality $\langle v, B_W(u, v) \rangle = 0$, guaranteeing zero spurious energy growth ($0.000\text{e}+00$ radial drift).
-3. **Active Heap Constraint ($< 2.0\text{ MB}$)**:
+```math
+\Delta t_{i, j, k} = (T_{i, k} - T_{j, k})^{\text{obs}} - (T_{i, k} - T_{j, k})^{\text{calc}}
+```
+
+satisfy:
+
+```math
+G_{\text{hypo}} \Delta \mathbf m + G_{\text{velo}} \delta\mathbf u = \mathbf r
+```
+
+1. **Clock Subspace Projection** ($\mathcal H _{\text{clock}}$):
+   Relative origin-time shifts $(\Delta t_{0, i} - \Delta t_{0, j})$
+   and station clock drifts project into $\mathcal H _{\text{clock}}$.
+2. **Skew-Symmetric** $\mathfrak{so}(C)$ **Triad Tie-Breaking**:
+   Trade-offs between vertical focal depth $\Delta z_i$ and regional mantle velocity slowness $\delta u(z)$
+   are resolved via $B_W(u, v) \in \mathfrak{so}(C)$
+   with tangent orthogonality $\langle v, B_W(u, v) \rangle = 0$, guaranteeing zero spurious energy growth ($0.000\text{e}+00$ radial drift).
+3. **Active Heap Constraint** ($< 2.0\text{ MB}$):
    Ray Jacobians are evaluated via streaming ray-pair iterators without storing dense $N_{\text{pairs}} \times N_{\text{vox}}$ matrices.
 
 ---
@@ -639,17 +753,30 @@ The greedy `stealEvents()` routine re-evaluates detected picks against all exist
 
 ### 4.2 Triad Wavefront Disentanglement Formulation
 
-Let $\mathcal{W} = \{w_1, \dots, w_M\}$ be candidate expanding wavefronts (hypotheses) and $\mathcal{P} = \{p_1, \dots, p_N\}$ detected unassociated picks.
+Let $\mathcal W = \{w_1, \dots, w_M\}$ be candidate expanding wavefronts (hypotheses)
+and $\mathcal P = \{p_1, \dots, p_N\}$ detected unassociated picks.
 
-For each pick $p_j$ at station $s_k$ with arrival time $t_j$:
+For each pick $p_j$
+at station $s_k$
+with arrival time $t_j$:
 1. **Theoretical Phase Residual**:
-   $$\Delta \tau(p_j, w_m, \phi) = \left| t_j - \left(t_{0, m} + T_{\text{PREM}}(\mathbf{x}_m, \mathbf{s}_k, \phi)\right) \right|$$
+
+```math
+\Delta \tau(p_j, w_m, \phi) = \left| t_j - \left(t_{0, m} + T_{\text{PREM}}(\mathbf x _m, \mathbf s _k, \phi)\right) \right|
+```
+
    for phase $\phi \in \{\text{P}, \text{S}, \text{PKP}, \text{PKIKP}\}$.
 2. **Phase Priority Weighting**:
    Because P-waves travel fastest ($V_p \approx 1.73 V_s$), an arrival compatible with an existing cluster's S-wave travel time must have a strong polarization and transverse component.
-3. **$\mathfrak{so}(C)$ Bilinear Triad Tie-Breaker**:
-   When a pick $p_j$ has ambiguous affinity between two competing clusters $c_1$ and $c_2$ ($\ell_{\text{sym}}(c_1) \approx \ell_{\text{sym}}(c_2)$), the priority margin is resolved by the skew-symmetric operator:
-   $$\ell_{\text{post}}(c_1) - \ell_{\text{post}}(c_2) = 2 \beta \alpha \bigl(W(i_0, c_2, c_1) - W(i_0, c_1, c_2)\bigr)$$
+3. **Skew-Symmetric** $\mathfrak{so}(C)$ **Bilinear Triad Tie-Breaker**:
+   When a pick $p_j$ has ambiguous affinity between two competing clusters
+   $(c_1, c_2)$
+   with $\ell_{\text{sym}}(c_1) \approx \ell_{\text{sym}}(c_2)$, the priority margin is resolved by the skew-symmetric operator:
+
+```math
+\ell_{\text{post}}(c_1) - \ell_{\text{post}}(c_2) = 2 \beta \alpha \bigl(W(i_0, c_2, c_1) - W(i_0, c_1, c_2)\bigr)
+```
+
    where $W$ encodes wavefront maturity (number of verified P-picks and cluster age).
    - Swapping clusters strictly negates the priority: $S(W, i, c_2, c_1) = -S(W, i, c_1, c_2)$.
    - Eliminates cluster-stealing thrash: the more mature cluster definitively retains its expected S-wave arrival without allowing a nascent cluster to steal it.
@@ -661,7 +788,11 @@ For each pick $p_j$ at station $s_k$ with arrival time $t_j$:
 ### 5.1 Complete Elimination of "People Felt" Counters
 
 In legacy `GlobalQuake` (`GlobalQuakePanel.java:220`):
-$$\text{countFelt} = \sum_{c \in \text{cities}} \text{pop}_c \cdot \text{feltMultiplier}(\text{PGA}_c)$$
+
+```math
+\text{countFelt} = \sum_{c \in \text{cities}} \text{pop} _c \cdot \text{feltMultiplier}(\text{PGA} _c)
+```
+
 where $\text{feltMultiplier}$ used an arbitrary $\arctan(\text{PGA})$ scaling.
 This produced misleading pseudo-demographic estimates ("Possibly felt by 4,210,000 people").
 
@@ -694,22 +825,42 @@ Given an earthquake $(\text{lat}, \text{lon}, M)$:
 ### 5.3 Ground-Motion Prediction Equations (GMPE) & Intensity Scales
 
 1. **PGA Formulation (Worden et al. 2012 / Akkar et al. 2014)**:
-   $$\log_{10}(\text{PGA}) = c_1 + c_2 M - c_3 \log_{10}\sqrt{R_{\text{hypo}}^2 + h_0^2} + \delta_{\text{slab}}$$
-   where $R_{\text{hypo}} = \sqrt{\Delta^2 + z^2}$ is hypocentral distance in km, and $\delta_{\text{slab}}$ is the TTI stiffness amplification factor along the ray propagation azimuth.
+
+```math
+\log_{10}(\text{PGA}) = c_1 + c_2 M - c_3 \log_{10}\sqrt{R_{\text{hypo}}^2 + h_0^2} + \delta_{\text{slab}}
+```
+
+   where $R_{\text{hypo}} = \sqrt{\Delta^2 + z^2}$ is hypocentral distance in km,
+   and $\delta_{\text{slab}}$ is the TTI stiffness amplification factor along the ray propagation azimuth.
 2. **Intensity Scales**:
    - **Modified Mercalli Intensity (MMI)**:
-     $$\text{MMI} = \begin{cases}
-     1.0 & \text{PGA} < 0.0017 g \\
-     2.158 + 1.670 \log_{10}(\text{PGA}) & 0.0017 g \le \text{PGA} \le 0.098 g \\
-     3.504 + 2.766 \log_{10}(\text{PGA}) & \text{PGA} > 0.098 g
-     \end{cases}$$
-   - **JMA Shindo (Instrumental Intensity $I_{\text{JMA}}$)**:
-     $$I_{\text{JMA}} = 2.016 + 1.889 \log_{10}(\text{PGV})$$
-     mapped to JMA scales: `0`, `1`, `2`, `3`, `4`, `5-`, `5+`, `6-`, `6+`, `7`.
+
+```math
+\text{MMI} = \begin{cases}
+1.0 & \text{PGA} < 0.0017 g \\
+2.158 + 1.670 \log_{10}(\text{PGA}) & 0.0017 g \le \text{PGA} \le 0.098 g \\
+3.504 + 2.766 \log_{10}(\text{PGA}) & \text{PGA} > 0.098 g
+\end{cases}
+```
+
+   - **JMA Shindo (Instrumental Intensity** $I_{\text{JMA}}$ **)**:
+
+```math
+I_{\text{JMA}} = 2.016 + 1.889 \log_{10}(\text{PGV})
+```
+
+   Mapped to JMA scales: `0`, `1`, `2`, `3`, `4`, `5-`, `5+`, `6-`, `6+`, `7`.
 3. **Dynamic P- and S-Wave Countdowns**:
    For each affected municipality $m$ at epicentral distance $\Delta_m$:
-   $$t_{\text{countdown, P}} = \max\left(0, t_{0} + T_{\text{PREM}, P}(\Delta_m, z) - t_{\text{current}}\right)$$
-   $$t_{\text{countdown, S}} = \max\left(0, t_{0} + T_{\text{PREM}, S}(\Delta_m, z) - t_{\text{current}}\right)$$
+
+```math
+t_{\text{countdown, P}} = \max\left(0, t_{0} + T_{\text{PREM}, P}(\Delta_m, z) - t_{\text{current}}\right)
+```
+
+```math
+t_{\text{countdown, S}} = \max\left(0, t_{0} + T_{\text{PREM}, S}(\Delta_m, z) - t_{\text{current}}\right)
+```
+
    Displayed with color-coded warning banners (Cyan for P-wave, Amber/Red for destructive S-wave).
 
 ---
@@ -723,7 +874,7 @@ Matching `g3vm/studio/g3vm_portable_studio.html` and `oatse/studio/oatse_portabl
   ```bash
   quakesnail studio --export-html studio/quakesnail_portable_studio.html
   ```
-- It is a single, self-contained HTML5 file ($> 50\text{ KB}$, typically $200\text{--}800\text{ KB}$) requiring zero external dependencies, zero CDNs, and zero local servers.
+- It is a single, self-contained HTML5 file ($> 50\text{ KB}$, typically $200\text{–}800\text{ KB}$) requiring zero external dependencies, zero CDNs, and zero local servers.
 - **Embedded Simulation Mode**:
   ```html
   <script>
@@ -981,28 +1132,56 @@ def trace_ray_with_g3vm_or_fallback(
 The Lean 4 formalization file `quakesnail/formalization/OcclusionTriad.lean` inherits and extends the core theorems:
 
 1. **Theorem 2.1 (`skew_triad_swap_neg`)**:
-   $$S(W, i, c_1, c_2) = -S(W, i, c_2, c_1), \quad S(W, i, c, c) = 0$$
+
+```math
+S(W, i, c_1, c_2) = -S(W, i, c_2, c_1), \quad S(W, i, c, c) = 0
+```
+
    Guarantees that phase priority between two wavefronts is strictly antisymmetric.
 2. **Theorem 2.2 (`occlusion_triad_breaks_symmetric_tie`)**:
-   $$\ell_{\text{post}}(c_1) - \ell_{\text{post}}(c_2) = 2 \beta \alpha (W_{i_0, c_2, c_1} - W_{i_0, c_1, c_2})$$
+
+```math
+\ell_{\text{post}}(c_1) - \ell_{\text{post}}(c_2) = 2 \beta \alpha (W_{i_0, c_2, c_1} - W_{i_0, c_1, c_2})
+```
+
    Breaks association ties deterministically with zero cluster thrash.
 3. **Theorem 2.3 (`darksnail_readout_energy_conservation`)**:
-   $$\langle v, B_W(u, v) \rangle = 0$$
+
+```math
+\langle v, B_W(u, v) \rangle = 0
+```
+
    Tangent orthogonality prevents spurious energy growth during iterative wavefront updates.
 4. **Theorem 2.6 (`darksnail_multistep_spherical_invariance`)**:
-   $$\|v^{(K)}\|_2^2 = \|v^{(0)}\|_2^2 \quad \text{with } 0.000\text{e}+00 \text{ radial drift}$$
+
+```math
+\|v^{(K)}\|_2^2 = \|v^{(0)}\|_2^2 \quad \text{with } 0.000\text{e}+00 \text{ radial drift}
+```
+
    Guarantees exact conservation of association state probabilities across unrolled cascade steps.
 5. **Theorem 2.7 (`so6_stiffness_preserves_pos_def` & `so6_stiffness_trace_conservation`)**:
-   $$M(R)^T M(R) = I_6, \quad \text{Tr}(C_{\text{TTI}}) = \text{Tr}(C_{\text{VTI}})$$
+
+```math
+M(R)^T M(R) = I_6, \quad \text{Tr}(C_{\text{TTI}}) = \text{Tr}(C_{\text{VTI}})
+```
+
    Guarantees that subduction slab stiffness rotation preserves positive definiteness and acoustic velocity bounds.
 6. **Theorem 7d (`morseImpulse_iff_strict_extremum`)**:
-   $$I_{\text{Morse}}(v, t) = \Delta_- v_t \cdot \Delta_+ v_t > 0 \iff t \text{ is a strict local extremum}$$
+
+```math
+I_{\text{Morse}}(v, t) = \Delta_- v_t \cdot \Delta_+ v_t > 0 \iff t \text{ is a strict local extremum}
+```
+
    Proves mathematical sufficiency for 1-sample causal glitch rejection.
 7. **Theorem 7e (`caliper_morse_rejects_washout_step`)**:
    On monotone ramp offsets or flat steps, $I_{\text{Morse}} \le 0$ identically, proving zero false glitch triggers under baseline shifts.
 8. **Theorem 10 (`seismic_wavefront_causal_ordering`) [Seismic Extension]**:
    For any hypocenter at depth $z \ge 0$ and surface receiver at distance $\Delta > 0$, because $V_p(r) > V_s(r) > 0$ everywhere in PREM:
-   $$T_P(\Delta, z) < T_S(\Delta, z) \quad \text{strictly}$$
+
+```math
+T_P(\Delta, z) < T_S(\Delta, z) \quad \text{strictly}
+```
+
    proving that physical S-waves can never causally precede P-waves from the same event.
 
 All theorems verify with **zero `sorry`** and zero custom axioms. Runtime verification via `quakesnail verify-theorems` checks all invariant residuals within numerical tolerance $\le 1.0\text{e}-7$.

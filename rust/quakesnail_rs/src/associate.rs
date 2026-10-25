@@ -7,9 +7,10 @@ use crate::{
     ClusterSlot, PickSlot, CASCADE_DIM, MAX_CLUSTERS, MAX_PICKS, MAX_STATIONS, PHASE_P,
     PHASE_PKP, PHASE_S,
 };
+use crate::math::*;
 
 pub const EARTH_RADIUS_KM: f32 = 6371.0;
-pub const PI: f32 = 3.14159265358979323846;
+pub const PI: f32 = core::f32::consts::PI;
 pub const DEG_TO_RAD: f32 = PI / 180.0;
 
 /// Great-circle distance between two (lat, lon) coordinates in degrees.
@@ -19,13 +20,13 @@ pub fn haversine_distance_km(lat1: f32, lon1: f32, lat2: f32, lon2: f32) -> f32 
     let dphi = (lat2 - lat1) * DEG_TO_RAD;
     let dlambda = (lon2 - lon1) * DEG_TO_RAD;
 
-    let sin_half_dphi = (dphi * 0.5).sin();
-    let sin_half_dlam = (dlambda * 0.5).sin();
+    let sin_half_dphi = fast_sin(dphi * 0.5);
+    let sin_half_dlam = fast_sin(dlambda * 0.5);
 
     let a = sin_half_dphi * sin_half_dphi
-        + phi1.cos() * phi2.cos() * sin_half_dlam * sin_half_dlam;
-    let a_clamped = a.max(0.0).min(1.0);
-    let c = 2.0 * a_clamped.sqrt().atan2((1.0 - a_clamped).sqrt());
+        + fast_cos(phi1) * fast_cos(phi2) * sin_half_dlam * sin_half_dlam;
+    let a_clamped = a.clamp(0.0, 1.0);
+    let c = 2.0 * fast_atan2(fast_sqrt(a_clamped), fast_sqrt(1.0 - a_clamped));
 
     EARTH_RADIUS_KM * c
 }
@@ -33,7 +34,7 @@ pub fn haversine_distance_km(lat1: f32, lon1: f32, lat2: f32, lon2: f32) -> f32 
 /// Approximate 1D travel times for phase association gating:
 /// Returns (t_p_sec, t_s_sec, t_pkp_sec).
 pub fn approx_phase_travel_times(distance_km: f32, depth_km: f32) -> (f32, f32, f32) {
-    let slant_km = (distance_km * distance_km + depth_km * depth_km).sqrt();
+    let slant_km = fast_sqrt(distance_km * distance_km + depth_km * depth_km);
 
     // Average crustal/upper mantle velocities
     let vp = if distance_km < 800.0 {
@@ -70,8 +71,8 @@ pub fn evaluate_so_c_triad(
 ) {
     for k in 0..CASCADE_DIM {
         let mut sum_k = 0.0f64;
-        for i in 0..CASCADE_DIM {
-            let u_i = u[i] as f64;
+        for (i, &u_i_f32) in u.iter().enumerate().take(CASCADE_DIM) {
+            let u_i = u_i_f32 as f64;
             if u_i.abs() < 1e-12 {
                 continue;
             }
@@ -142,21 +143,21 @@ pub fn associate_picks_in_arena(
         let mut min_residual = 1e6f32;
 
         // 1. Match against existing active clusters
-        for c_idx in 0..(*num_clusters).min(MAX_CLUSTERS) {
-            if clusters[c_idx].active == 0 {
+        for (c_idx, cluster) in clusters.iter().enumerate().take((*num_clusters).min(MAX_CLUSTERS)) {
+            if cluster.active == 0 {
                 continue;
             }
 
             let dist_km = haversine_distance_km(
                 st_lat,
                 st_lon,
-                clusters[c_idx].lat_deg,
-                clusters[c_idx].lon_deg,
+                cluster.lat_deg,
+                cluster.lon_deg,
             );
-            let depth_km = clusters[c_idx].depth_km;
+            let depth_km = cluster.depth_km;
             let (tp, ts, tpkp) = approx_phase_travel_times(dist_km, depth_km);
 
-            let t0 = clusters[c_idx].origin_time_s;
+            let t0 = cluster.origin_time_s;
             let res_p = ((t_obs - (t0 + tp as f64)).abs()) as f32;
             let res_s = ((t_obs - (t0 + ts as f64)).abs()) as f32;
             let res_pkp = ((t_obs - (t0 + tpkp as f64)).abs()) as f32;
@@ -211,9 +212,9 @@ pub fn associate_picks_in_arena(
             // Gather unassociated picks
             let mut unassociated: [usize; 8] = [0; 8];
             let mut count_unassoc = 0;
-            for j in 0..num_picks.min(MAX_PICKS) {
-                if picks[j].active != 0 && picks[j].phase_type == PHASE_P {
-                    let s_j = picks[j].station_idx as usize;
+            for (j, pick) in picks.iter().enumerate().take(num_picks.min(MAX_PICKS)) {
+                if pick.active != 0 && pick.phase_type == PHASE_P {
+                    let s_j = pick.station_idx as usize;
                     if s_j < MAX_STATIONS && stations[s_j].active != 0 {
                         unassociated[count_unassoc] = j;
                         count_unassoc += 1;

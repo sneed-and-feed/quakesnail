@@ -1,8 +1,8 @@
 {
   "package": "quakesnail",
   "version": "0.1.0",
-  "timestamp_utc": "2026-10-24T17:05:48Z",
-  "elapsed_seconds": 10.092538600089028,
+  "timestamp_utc": "2026-10-25T18:34:50Z",
+  "elapsed_seconds": 7.700807300047018,
   "mode_a": {
     "mode_a_passed": true,
     "crustal_3d_rmse_km": 0.0013243161661454725,
@@ -328,9 +328,9 @@
     }
   },
   "spatial_indexing_benchmark": {
-    "quakesnail_kdtree_ms": 0.7795999990776181,
-    "legacy_gq_linear_43k_scan_ms": 1264.0009999740869,
-    "speedup_factor": 1621.34556371163,
+    "quakesnail_kdtree_ms": 0.7455999730154872,
+    "legacy_gq_linear_43k_scan_ms": 746.0815999656916,
+    "speedup_factor": 1000.6459589158198,
     "zero_people_felt_in_quakesnail": true
   },
   "artifacts_generated": {
