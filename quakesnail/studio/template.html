@@ -1577,26 +1577,49 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     { name: "CUBA", lat: 21.8, lon: -79.5, tier: 2, kind: "island" },
     { name: "PUERTO RICO", lat: 18.2, lon: -66.5, tier: 3, kind: "island" },
     { name: "COLOMBIA", lat: 4.5, lon: -73.5, tier: 2, kind: "country" },
+    { name: "VENEZUELA", lat: 7.5, lon: -66.0, tier: 2, kind: "country" },
     { name: "ECUADOR", lat: -1.5, lon: -78.5, tier: 2, kind: "country" },
+    { name: "GALAPAGOS IS.", lat: -0.6, lon: -90.5, tier: 3, kind: "island" },
     { name: "PERU", lat: -10.0, lon: -75.5, tier: 2, kind: "country" },
+    { name: "BOLIVIA", lat: -16.8, lon: -64.5, tier: 2, kind: "country" },
+    { name: "ANDES", lat: -21.5, lon: -67.8, tier: 2, kind: "region" },
+    { name: "ATACAMA", lat: -24.5, lon: -69.5, tier: 3, kind: "region" },
     { name: "CHILE", lat: -33.4, lon: -70.8, tier: 2, kind: "country" },
     { name: "ARGENTINA", lat: -35.0, lon: -64.0, tier: 2, kind: "country" },
+    { name: "PATAGONIA", lat: -46.5, lon: -70.0, tier: 2, kind: "region" },
+    { name: "TIERRA DEL FUEGO", lat: -54.2, lon: -68.5, tier: 3, kind: "island" },
+    { name: "SCOTIA SEA", lat: -57.5, lon: -44.0, tier: 2, kind: "ocean" },
     { name: "BRAZIL", lat: -11.0, lon: -52.0, tier: 2, kind: "country" },
     { name: "ICELAND", lat: 64.9, lon: -18.5, tier: 2, kind: "island" },
+    { name: "AZORES", lat: 38.5, lon: -28.0, tier: 3, kind: "island" },
     { name: "UNITED KINGDOM", lat: 54.2, lon: -2.2, tier: 2, kind: "country" },
     { name: "IRELAND", lat: 53.3, lon: -8.0, tier: 3, kind: "island" },
     { name: "NORWAY", lat: 61.5, lon: 9.0, tier: 2, kind: "country" },
     { name: "FRANCE", lat: 46.6, lon: 2.4, tier: 2, kind: "country" },
+    { name: "PYRENEES", lat: 42.7, lon: 0.6, tier: 3, kind: "region" },
     { name: "SPAIN", lat: 40.2, lon: -3.7, tier: 2, kind: "country" },
+    { name: "PORTUGAL", lat: 39.6, lon: -8.1, tier: 3, kind: "country" },
+    { name: "IBERIA", lat: 40.0, lon: -4.5, tier: 3, kind: "region" },
     { name: "GERMANY", lat: 51.1, lon: 10.4, tier: 2, kind: "country" },
+    { name: "ALPS", lat: 46.5, lon: 10.2, tier: 2, kind: "region" },
     { name: "ITALY", lat: 42.6, lon: 12.6, tier: 2, kind: "country" },
     { name: "SICILY", lat: 37.6, lon: 14.1, tier: 3, kind: "island" },
     { name: "SARDINIA", lat: 40.1, lon: 9.0, tier: 3, kind: "island" },
     { name: "CORSICA", lat: 42.1, lon: 9.1, tier: 3, kind: "island" },
+    { name: "CROATIA", lat: 44.8, lon: 16.0, tier: 3, kind: "country" },
+    { name: "ALBANIA", lat: 41.2, lon: 20.1, tier: 3, kind: "country" },
+    { name: "CARPATHIANS", lat: 46.8, lon: 25.2, tier: 2, kind: "region" },
+    { name: "ROMANIA", lat: 45.9, lon: 24.9, tier: 2, kind: "country" },
+    { name: "BULGARIA", lat: 42.7, lon: 25.4, tier: 3, kind: "country" },
     { name: "GREECE", lat: 39.2, lon: 22.0, tier: 2, kind: "country" },
+    { name: "AEGEAN SEA", lat: 38.5, lon: 25.2, tier: 3, kind: "ocean" },
+    { name: "IONIAN SEA", lat: 37.5, lon: 18.5, tier: 3, kind: "ocean" },
+    { name: "MEDITERRANEAN SEA", lat: 35.5, lon: 18.0, tier: 2, kind: "ocean" },
     { name: "CRETE", lat: 35.2, lon: 24.9, tier: 3, kind: "island" },
     { name: "CYPRUS", lat: 35.1, lon: 33.4, tier: 3, kind: "island" },
     { name: "TURKEY", lat: 39.0, lon: 35.2, tier: 2, kind: "country" },
+    { name: "ANATOLIA", lat: 38.8, lon: 32.8, tier: 3, kind: "region" },
+    { name: "CAUCASUS", lat: 42.5, lon: 44.5, tier: 2, kind: "region" },
     { name: "IRAN", lat: 32.5, lon: 53.5, tier: 2, kind: "country" },
     { name: "KYRGYZSTAN", lat: 41.4, lon: 74.8, tier: 3, kind: "country" },
     { name: "INDIA", lat: 22.0, lon: 79.0, tier: 2, kind: "country" },
@@ -1637,13 +1660,24 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     { type: "SUBDUCTION", color: "#d633ff", pts: [[40.4,-125.0],[43.5,-125.2],[46.5,-125.5],[49.5,-127.5],[50.8,-129.0]] },
     // Middle America Trench (Mexico - Central America)
     { type: "SUBDUCTION", color: "#d633ff", pts: [[20.2,-106.0],[17.5,-102.5],[15.2,-96.5],[13.0,-91.0],[10.0,-86.2],[8.0,-83.0]] },
-    // Peru-Chile (Andean) Trench
-    { type: "SUBDUCTION", color: "#d633ff", pts: [[3.5,-79.0],[-1.5,-81.2],[-6.0,-81.5],[-12.0,-78.2],[-18.2,-71.8],[-24.0,-71.5],[-30.0,-72.2],[-36.0,-73.8],[-43.5,-75.8]] },
+    // Colombia-Ecuador-Peru-Chile (Nazca-South America) Megathrust Trench & Austral Andes / Southern Chile Trench
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[7.2,-78.2],[4.2,-78.5],[1.5,-80.8],[-1.5,-81.4],[-4.8,-81.8],[-8.5,-80.4],[-12.2,-78.1],[-15.5,-76.0],[-18.4,-71.8],[-23.5,-71.4],[-29.5,-72.2],[-33.5,-72.8],[-36.5,-73.9],[-39.8,-74.8],[-43.2,-75.6],[-46.5,-75.8],[-49.5,-76.2],[-52.5,-75.2],[-55.0,-70.5]] },
+    // South Sandwich Trench (Scotia Subduction Arc)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[-55.5,-28.0],[-56.3,-26.0],[-57.8,-25.2],[-59.3,-25.5],[-60.6,-26.8],[-61.0,-28.8]] },
+    // South Caribbean Deformed Belt / Southern Caribbean Subduction-Accretion Margin
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[9.5,-76.5],[11.5,-74.8],[12.4,-71.5],[12.2,-68.0],[11.8,-64.5]] },
     // Caribbean / Lesser Antilles Trench
     { type: "SUBDUCTION", color: "#d633ff", pts: [[19.8,-68.5],[19.5,-64.0],[17.0,-60.5],[13.5,-59.5],[11.0,-61.0]] },
-    // Mediterranean Calabrian & Hellenic Subduction Arcs
-    { type: "SUBDUCTION", color: "#d633ff", pts: [[39.0,16.2],[37.8,16.5],[36.5,15.5]] },
-    { type: "SUBDUCTION", color: "#d633ff", pts: [[38.2,20.2],[36.2,21.5],[34.5,24.5],[35.2,27.8],[36.2,29.0]] },
+    // Gibraltar / Rif-Betic Arc & Gulf of Cadiz Subduction/Accretionary Wedge (1755 Lisbon M8.7 Source Zone)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[36.8,-10.8],[36.0,-8.8],[35.6,-6.8],[35.2,-5.2],[35.8,-4.5],[36.8,-4.8]] },
+    // Calabrian Subduction Arc (Southern Italy - Ionian Sea - Sicily)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[39.8,16.6],[39.0,17.2],[38.1,16.8],[37.3,15.8],[36.9,14.8]] },
+    // Hellenic Subduction Arc & Pliny/Strabo Trenches (Ionian Islands - Peloponnese - Crete - Rhodes)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[38.6,20.2],[37.4,20.8],[36.2,21.6],[35.0,23.2],[34.3,24.8],[34.5,26.6],[35.4,27.9],[36.4,28.9]] },
+    // Cyprus Subduction Arc (Eastern Mediterranean)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[35.6,30.2],[34.6,31.6],[34.3,33.2],[34.8,34.8],[35.8,35.8]] },
+    // Vrancea Slab / SE Carpathian Subduction Remnant (Romania Intermediate-Depth Seismic Nest)
+    { type: "SUBDUCTION", color: "#d633ff", pts: [[46.3,26.2],[45.7,26.6],[45.1,26.0],[44.8,25.2]] },
     // TRANSFORM (#d96b27)
     // San Andreas Fault & Eastern California Shear Zone (Ridgecrest / Garlock / Walker Lane)
     { type: "TRANSFORM", color: "#d96b27", pts: [[40.4,-124.4],[38.0,-122.6],[35.8,-120.4],[34.3,-117.5],[33.0,-115.6],[31.5,-114.4]] },
@@ -1656,10 +1690,49 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     { type: "TRANSFORM", color: "#d96b27", pts: [[-45.4,166.6],[-44.2,168.5],[-43.0,170.8],[-41.8,173.2],[-41.3,174.8],[-40.2,175.8],[-38.8,176.8],[-37.8,177.2]] },
     { type: "TRANSFORM", color: "#d96b27", pts: [[-43.3,171.4],[-42.5,173.6]] },
     { type: "TRANSFORM", color: "#d96b27", pts: [[-42.7,171.8],[-41.9,174.1]] },
-    // North Anatolian, East Anatolian & Dead Sea Transform
-    { type: "TRANSFORM", color: "#d96b27", pts: [[40.5,26.2],[40.8,29.5],[41.0,34.5],[39.8,38.8],[38.8,41.5]] },
+    // South American Active Strike-Slip & Transform Systems:
+    // Bocono - San Sebastian - El Pilar Fault System (Venezuela - Northern Andes)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[10.6,-61.8],[10.5,-64.2],[10.6,-66.8],[10.2,-68.5],[9.3,-70.0],[8.5,-71.2],[7.6,-72.4]] },
+    // Eastern Frontal / Algeciras / Pallatanga - Chingual-Cosanga-Puna (North Andean Block Megashear)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[7.6,-72.4],[5.8,-73.2],[3.8,-74.5],[1.8,-76.2],[0.2,-77.8],[-1.5,-78.8],[-2.8,-79.9]] },
+    // Romeral & Cauca-Patia Fault System (Colombia)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[7.2,-75.5],[5.0,-75.7],[2.5,-76.6],[0.8,-77.7]] },
+    // Santa Marta - Bucaramanga & Oca - Ancon Faults (Colombia/Venezuela)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[11.2,-74.1],[9.5,-73.6],[7.1,-73.1],[5.8,-72.8]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[11.3,-73.5],[11.2,-70.5],[10.8,-68.5]] },
+    // Atacama Fault System (Northern Chile Forearc)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[-20.5,-70.1],[-22.5,-70.3],[-25.0,-70.4],[-27.2,-70.8],[-29.2,-71.2]] },
+    // Liquine-Ofqui Fault Zone (Southern Chile Intra-Arc Dextral Megafault)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[-38.2,-71.6],[-40.0,-72.0],[-42.0,-72.5],[-44.2,-73.1],[-46.5,-74.0]] },
+    // Magallanes-Fagnano Fault System & North/South Scotia Ridge + Shackleton Fracture Zone
+    { type: "TRANSFORM", color: "#d96b27", pts: [[-52.8,-73.5],[-53.8,-70.8],[-54.6,-67.5],[-54.5,-62.0],[-54.2,-55.0],[-54.0,-46.0],[-54.2,-37.5]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[-60.8,-56.0],[-60.6,-48.0],[-60.5,-40.0],[-60.6,-32.0]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[-56.0,-64.5],[-58.5,-61.0],[-60.8,-56.0]] },
+    // Panama Fracture Zone
+    { type: "TRANSFORM", color: "#d96b27", pts: [[5.0,-82.6],[7.2,-82.6],[8.5,-82.8]] },
+    // European & Mediterranean Active Strike-Slip & Transform Systems:
+    // Gloria Fault (Azores-Gibraltar Plate Boundary)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[37.4,-24.5],[37.2,-20.5],[37.0,-16.5],[36.8,-13.0],[36.6,-10.8]] },
+    // North Anatolian Fault Zone & North Aegean Trough (E. Turkey across Marmara to Sporades/Skyros)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[39.0,41.5],[39.8,39.0],[40.6,36.5],[41.0,34.0],[40.7,31.0],[40.7,29.0],[40.6,27.2],[40.2,25.4],[39.6,24.0],[39.1,23.2]] },
+    // East Anatolian & Dead Sea Transform
     { type: "TRANSFORM", color: "#d96b27", pts: [[36.2,36.2],[37.6,37.8],[39.2,40.4]] },
     { type: "TRANSFORM", color: "#d96b27", pts: [[29.5,34.9],[31.8,35.5],[34.0,36.0],[36.2,36.2]] },
+    // Kephalonia Transform Fault Zone (Western Greece / Ionian Islands)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[39.4,20.1],[38.7,20.3],[38.0,20.2]] },
+    // Eastern Betic Shear Zone (Carboneras - Palomares - Alhama de Murcia - Crevillente Faults, SE Spain)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[36.7,-2.2],[37.3,-1.8],[37.7,-1.5],[38.2,-0.8],[38.6,-0.1]] },
+    // Western & Central Alpine - Periadriatic (Insubric) - Mur-Murz - Vienna Basin Strike-Slip System
+    { type: "TRANSFORM", color: "#d96b27", pts: [[45.8,7.2],[46.2,8.8],[46.4,10.5],[46.6,12.8],[47.1,14.6],[47.6,15.8],[48.2,16.5],[48.9,17.6]] },
+    // South Iceland Seismic Zone (SISZ) & Tjornes Fracture Zone (Iceland)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[63.9,-22.2],[64.0,-20.2],[64.0,-19.0]] },
+    { type: "TRANSFORM", color: "#d96b27", pts: [[66.0,-18.8],[66.3,-17.2],[66.6,-16.5]] },
+    // Jan Mayen Fracture Zone (Norwegian-Greenland Sea)
+    { type: "TRANSFORM", color: "#d96b27", pts: [[71.5,-12.0],[71.0,-8.0],[70.6,-5.0]] },
+    // North Sicilian - Aeolian - Tindari - Letojanni Strike-Slip System
+    { type: "TRANSFORM", color: "#d96b27", pts: [[38.2,12.8],[38.4,14.2],[38.5,14.9],[37.9,15.4]] },
+    // Pannonian / Zagreb - Mid-Hungarian Shear Zone
+    { type: "TRANSFORM", color: "#d96b27", pts: [[45.6,15.8],[46.2,17.2],[46.9,18.8],[47.5,20.4]] },
     // Great Sumatran, Philippine & Sagaing Transform Faults
     { type: "TRANSFORM", color: "#d96b27", pts: [[5.5,95.4],[2.0,99.0],[-1.5,101.2],[-5.8,104.5]] },
     { type: "TRANSFORM", color: "#d96b27", pts: [[18.0,120.8],[14.0,122.5],[10.5,125.0],[6.8,126.2]] },
@@ -1673,23 +1746,63 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     { type: "DIVERGENT", color: "#2eb85c", pts: [[-32.0,-179.9],[-27.0,-178.2],[-22.0,-176.6],[-17.5,-175.0]] },
     // East Pacific Rise & Gulf of California Rift
     { type: "DIVERGENT", color: "#2eb85c", pts: [[31.2,-114.2],[27.0,-111.2],[23.0,-108.5],[15.0,-104.5],[5.0,-102.0],[-8.0,-107.5],[-22.0,-113.5],[-35.0,-111.5]] },
-    // Mid-Atlantic Ridge (Iceland to South Atlantic)
-    { type: "DIVERGENT", color: "#2eb85c", pts: [[66.2,-17.0],[63.8,-22.5],[52.0,-35.0],[38.0,-30.0],[24.0,-45.0],[10.0,-41.0],[0.0,-18.0],[-15.0,-13.0],[-30.0,-14.0]] },
+    // Galapagos Spreading Center (Cocos-Nazca Ridge)
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[1.8,-101.0],[1.5,-95.0],[0.8,-90.5],[0.8,-85.0],[1.2,-80.5]] },
+    // Chile Rise (Nazca-Antarctic Spreading Ridge to Chile Triple Junction)
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[-36.5,-108.0],[-39.5,-98.0],[-42.0,-88.0],[-44.5,-81.0],[-46.2,-75.8]] },
+    // Mid-Atlantic Ridge (Reykjanes Ridge - Iceland WVZ/EVZ/NVZ - Kolbeinsey Ridge - Mohns Ridge)
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[52.0,-35.0],[56.5,-34.5],[60.5,-29.0],[63.8,-22.6],[64.3,-21.0],[64.7,-17.5],[65.8,-16.8],[67.5,-18.5],[70.5,-15.5],[72.5,-4.0],[73.8,6.0]] },
+    // Mid-Atlantic Ridge (North to South Atlantic)
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[52.0,-35.0],[38.0,-30.0],[24.0,-45.0],[10.0,-41.0],[0.0,-18.0],[-15.0,-13.0],[-30.0,-14.0],[-45.0,-15.0],[-54.5,-1.5]] },
+    // Terceira Rift (Azores Triple Junction)
+    { type: "DIVERGENT", color: "#2eb85c", pts: [[38.8,-30.0],[38.5,-28.2],[37.7,-25.5]] },
     // Red Sea & Gulf of Aden Rift
     { type: "DIVERGENT", color: "#2eb85c", pts: [[27.8,34.0],[20.0,38.5],[13.0,43.0],[12.0,48.0],[10.0,55.0]] },
     // Okinawa Trough
     { type: "DIVERGENT", color: "#2eb85c", pts: [[25.0,122.8],[27.5,126.8],[30.8,129.5]] },
     // NORMAL (#00d9ff)
-    // Apennine Extensional Fault System (Italy: L'Aquila, Campi Flegrei, Calabria)
-    { type: "NORMAL", color: "#00d9ff", pts: [[43.8,12.2],[42.4,13.4],[41.2,14.2],[40.2,15.6],[38.5,16.1]] },
-    // Gulf of Corinth & Aegean Extensional Grabens
-    { type: "NORMAL", color: "#00d9ff", pts: [[38.4,21.7],[38.1,23.2],[38.5,26.8]] },
+    // Apennine - Calabrian - Messina Extensional Fault System (Umbria-Marche, L'Aquila, Fucino, Irpinia, Pollino, Messina Strait, Malta Escarpment)
+    { type: "NORMAL", color: "#00d9ff", pts: [[43.9,12.1],[43.1,12.8],[42.4,13.4],[41.8,13.8],[41.1,14.6],[40.5,15.5],[39.8,16.1],[39.1,16.3],[38.2,15.6],[37.5,15.2],[36.8,15.4]] },
+    // Upper Rhine Graben - Roer Valley (Lower Rhine) Embayment (Switzerland - France - Germany - Netherlands - Belgium)
+    { type: "NORMAL", color: "#00d9ff", pts: [[47.5,7.6],[48.3,7.7],[49.1,8.2],[49.9,8.4],[50.5,7.4],[50.9,6.3],[51.5,5.4]] },
+    // Corinth - Evia - Thessaly - Mygdonia & Bulgaria (Struma/Maritsa) Balkan Extensional Grabens
+    { type: "NORMAL", color: "#00d9ff", pts: [[38.3,21.7],[38.1,22.8],[38.6,23.4],[39.4,22.8],[40.6,23.2]] },
+    { type: "NORMAL", color: "#00d9ff", pts: [[41.8,23.1],[42.1,24.2],[42.2,25.4]] },
+    // Western Anatolia (Menderes - Gediz - Buyuk Menderes - Gokova) Extensional Grabens
+    { type: "NORMAL", color: "#00d9ff", pts: [[38.6,26.8],[38.5,27.8],[38.2,28.8]] },
+    { type: "NORMAL", color: "#00d9ff", pts: [[37.6,27.2],[37.8,28.4],[37.8,29.3]] },
+    { type: "NORMAL", color: "#00d9ff", pts: [[36.9,27.4],[37.0,28.3]] },
+    // Eger (Ohre) Rift & Bohemian Massif (Czechia/Germany Vogtland Swarm Zone)
+    { type: "NORMAL", color: "#00d9ff", pts: [[50.1,12.2],[50.4,13.2],[50.7,14.2]] },
+    // Cordillera Blanca & Central Peru High-Andean Extensional Fault System
+    { type: "NORMAL", color: "#00d9ff", pts: [[-8.2,-77.9],[-9.2,-77.6],[-10.2,-77.2],[-13.5,-72.2],[-15.6,-71.8]] },
     // East African Rift System
     { type: "NORMAL", color: "#00d9ff", pts: [[11.5,41.5],[7.5,38.5],[2.0,36.2],[-3.5,35.8],[-9.0,34.0],[-15.0,35.0]] },
     // Basin and Range / Wasatch Front & Baikal Rift
     { type: "NORMAL", color: "#00d9ff", pts: [[37.2,-113.2],[40.8,-111.9],[43.8,-111.2]] },
     { type: "NORMAL", color: "#00d9ff", pts: [[51.5,104.0],[53.5,108.0],[56.0,111.5]] },
     // REVERSE (#2b8cbe)
+    // Sub-Andean Fold-and-Thrust Belt (Peru - Bolivia - NW Argentina)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[-4.5,-77.5],[-7.5,-76.0],[-11.0,-74.2],[-14.0,-70.5],[-17.5,-64.5],[-21.0,-63.5],[-24.5,-64.6],[-27.5,-65.5]] },
+    // Argentine Precordillera & Sierras Pampeanas Thrust System (San Juan - Mendoza - Cordoba)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[-28.5,-68.6],[-31.5,-68.6],[-33.0,-68.8],[-35.0,-69.2]] },
+    { type: "REVERSE", color: "#2b8cbe", pts: [[-30.5,-65.0],[-32.5,-64.8],[-34.0,-65.2]] },
+    // Pichilemu / Central Chile Coastal Reverse & Outer-Rise System
+    { type: "REVERSE", color: "#2b8cbe", pts: [[-34.2,-72.0],[-35.5,-72.6],[-37.5,-73.5]] },
+    // SW Iberian Margin Thrusts (Marques de Pombal, Horseshoe & Gorringe Bank Thrusts - Portugal)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[36.5,-11.5],[37.0,-10.2],[37.8,-9.8],[38.7,-9.5]] },
+    // Pyrenean Axial & North/South Pyrenean Thrust System (Spain - France - Andorra)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[43.2,-1.8],[42.9,-0.6],[42.6,0.8],[42.3,2.2],[42.2,3.1]] },
+    // Southern Alps (Friuli - Veneto) & Northern Apennine / Po Plain (Emilia-Romagna - Ferrara - Adriatic) Thrust Belt
+    { type: "REVERSE", color: "#2b8cbe", pts: [[45.8,11.2],[46.1,12.3],[46.3,13.2],[46.0,14.2]] },
+    { type: "REVERSE", color: "#2b8cbe", pts: [[44.8,10.5],[44.8,11.6],[44.3,12.5],[43.6,13.6],[42.8,14.2]] },
+    // External Dinarides - Albanides - Ionian Thrust Belt (Slovenia - Croatia - Montenegro - Albania - NW Greece)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[45.8,14.8],[44.8,15.4],[43.5,16.4],[42.6,18.1],[41.9,19.3],[41.0,19.5],[39.8,20.0]] },
+    // Greater Caucasus Main Thrust (Black Sea to Caspian Sea)
+    { type: "REVERSE", color: "#2b8cbe", pts: [[44.2,38.8],[43.2,41.5],[42.2,44.5],[41.2,47.5],[40.4,49.8]] },
+    // Betic Cordillera, Rif & North Algerian Tell Atlas Internal/Coastal Thrusts
+    { type: "REVERSE", color: "#2b8cbe", pts: [[36.5,-5.4],[37.1,-3.8],[37.6,-2.5]] },
+    { type: "REVERSE", color: "#2b8cbe", pts: [[35.8,-0.6],[36.3,1.3],[36.8,3.5],[36.9,5.8],[37.1,8.8]] },
     // Himalayan Main Frontal Thrust & Tian Shan
     { type: "REVERSE", color: "#2b8cbe", pts: [[34.0,73.0],[31.0,78.0],[28.5,84.0],[27.5,90.0],[27.2,95.5]] },
     { type: "REVERSE", color: "#2b8cbe", pts: [[39.2,71.5],[41.2,76.5],[42.8,82.0],[43.5,87.0]] },
@@ -1701,8 +1814,9 @@ window.QUAKESNAIL_OFFLINE_SCENARIOS = /*JSON_START*/{}/*JSON_END*/;
     // OTHER (#7f8c8d)
     // Itoigawa-Shizuoka & Median Tectonic Line (Japan)
     { type: "OTHER", color: "#7f8c8d", pts: [[34.2,132.5],[34.8,135.2],[35.6,138.2],[36.8,137.8]] },
-    // Azores-Gibraltar & Western Mediterranean
-    { type: "OTHER", color: "#7f8c8d", pts: [[36.8,-15.0],[36.0,-5.5],[37.2,1.0],[38.0,11.0],[37.5,15.5]] }
+    // Tornquist-Teisseyre Suture & Trans-Mediterranean Pelagian-Sicily Channel Zone
+    { type: "OTHER", color: "#7f8c8d", pts: [[55.5,13.5],[53.2,17.5],[50.5,22.0],[47.5,26.5]] },
+    { type: "OTHER", color: "#7f8c8d", pts: [[37.2,9.8],[36.8,11.8],[35.8,14.2]] }
   ];
 
   // Convert numeric MMI to Roman numeral and color

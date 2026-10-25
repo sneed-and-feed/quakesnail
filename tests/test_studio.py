@@ -911,4 +911,146 @@ class TestStudioBroadcastAndLiveModes:
         )
         assert proc.returncode == 0, f"JS geography/horizon test failed: {proc.stderr}"
 
+    def test_europe_and_south_america_subduction_and_fault_systems(self):
+        """
+        Verify upgraded high-resolution European/Mediterranean (EFSM20/GEM/Slab2) and
+        South American/Scotia (GEM/Slab2/PB2002) subduction zones, active fault systems
+        across all 5 tectonic types (SUBDUCTION, TRANSFORM, REVERSE, NORMAL, DIVERGENT),
+        cartographic GEO_LABELS, and byte-identical portable studio bundles.
+        """
+        studio_path = get_or_export_studio_html()
+        html = studio_path.read_text(encoding="utf-8")
+
+        # 1. Verify studio/quakesnail_portable_studio.html and studio/index.html are synced
+        portable_file = PROJECT_ROOT / "studio" / "quakesnail_portable_studio.html"
+        index_file = PROJECT_ROOT / "studio" / "index.html"
+        if portable_file.exists() and index_file.exists():
+            assert portable_file.read_text(encoding="utf-8") == index_file.read_text(encoding="utf-8")
+
+        # 2. Extract GEO_LABELS and FAULT_LINE_SEGMENTS and validate in Node.js
+        m_faults = re.search(
+            r"(const GEO_LABELS = \[.*?\];\s*// Tectonic Plate Boundary.*?\s*const FAULT_LINE_SEGMENTS = \[.*?\];)",
+            html,
+            re.DOTALL,
+        )
+        assert m_faults is not None, "Could not locate GEO_LABELS and FAULT_LINE_SEGMENTS in studio HTML"
+
+        node_code = f"""
+        {m_faults.group(1)}
+
+        const expectedColors = {{
+          SUBDUCTION: "#d633ff",
+          TRANSFORM: "#d96b27",
+          DIVERGENT: "#2eb85c",
+          NORMAL: "#00d9ff",
+          REVERSE: "#2b8cbe",
+          OTHER: "#7f8c8d",
+        }};
+
+        // Validate every fault segment's geometry and metadata
+        if (FAULT_LINE_SEGMENTS.length < 75) {{
+          console.error("Expected >= 75 global fault line segments, got:", FAULT_LINE_SEGMENTS.length);
+          process.exit(1);
+        }}
+
+        for (let i = 0; i < FAULT_LINE_SEGMENTS.length; i++) {{
+          const seg = FAULT_LINE_SEGMENTS[i];
+          if (!expectedColors[seg.type] || seg.color !== expectedColors[seg.type]) {{
+            console.error("Invalid type/color at segment", i, seg);
+            process.exit(1);
+          }}
+          if (!Array.isArray(seg.pts) || seg.pts.length < 2) {{
+            console.error("Segment has fewer than 2 points at index", i);
+            process.exit(1);
+          }}
+          for (let j = 0; j < seg.pts.length; j++) {{
+            const [lat, lon] = seg.pts[j];
+            if (typeof lat !== "number" || typeof lon !== "number" || lat < -90 || lat > 90 || lon < -180 || lon > 180) {{
+              console.error("Out-of-bounds coordinate at segment", i, "pt", j, lat, lon);
+              process.exit(1);
+            }}
+            if (j > 0) {{
+              const [pLat, pLon] = seg.pts[j - 1];
+              if (Math.hypot(lat - pLat, lon - pLon) < 1e-4) {{
+                console.error("Degenerate duplicate vertex at segment", i, "pt", j);
+                process.exit(1);
+              }}
+            }}
+          }}
+        }}
+
+        // Helper: check if segment intersects bounding box [minLat, maxLat, minLon, maxLon]
+        function inBox(seg, minLat, maxLat, minLon, maxLon) {{
+          return seg.pts.some(([lat, lon]) => lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon);
+        }}
+
+        // South America & Scotia Plate region: lat [-62, 13], lon [-109, -24]
+        const saSegs = FAULT_LINE_SEGMENTS.filter(s => inBox(s, -62.0, 13.0, -109.0, -24.0));
+        const saByType = {{ SUBDUCTION: 0, TRANSFORM: 0, REVERSE: 0, NORMAL: 0, DIVERGENT: 0 }};
+        saSegs.forEach(s => {{ if (saByType[s.type] !== undefined) saByType[s.type]++; }});
+
+        if (
+          saByType.SUBDUCTION < 3 ||
+          saByType.TRANSFORM < 9 ||
+          saByType.REVERSE < 4 ||
+          saByType.NORMAL < 1 ||
+          saByType.DIVERGENT < 2
+        ) {{
+          console.error("Insufficient South American fault coverage by type:", saByType);
+          process.exit(1);
+        }}
+
+        // Verify high-resolution Nazca-South America megathrust trench (>= 18 points from Colombia to Austral Andes)
+        const andeanTrench = saSegs.find(s => s.type === "SUBDUCTION" && s.pts.length >= 18);
+        if (!andeanTrench) {{
+          console.error("Missing high-resolution (>=18 pts) Colombia-Ecuador-Peru-Chile-Austral Andes trench!");
+          process.exit(1);
+        }}
+
+        // Europe, Mediterranean, Anatolian & North Atlantic region: lat [33, 75], lon [-36, 51]
+        const euSegs = FAULT_LINE_SEGMENTS.filter(s => inBox(s, 33.0, 75.0, -36.0, 51.0));
+        const euByType = {{ SUBDUCTION: 0, TRANSFORM: 0, REVERSE: 0, NORMAL: 0, DIVERGENT: 0 }};
+        euSegs.forEach(s => {{ if (euByType[s.type] !== undefined) euByType[s.type]++; }});
+
+        if (
+          euByType.SUBDUCTION < 5 ||
+          euByType.TRANSFORM < 9 ||
+          euByType.REVERSE < 7 ||
+          euByType.NORMAL < 7 ||
+          euByType.DIVERGENT < 2
+        ) {{
+          console.error("Insufficient European/Mediterranean fault coverage by type:", euByType);
+          process.exit(1);
+        }}
+
+        // Verify required European & South American tectonic/geographic labels in GEO_LABELS
+        const labelNames = new Set(GEO_LABELS.map(l => l.name));
+        const requiredLabels = [
+          "ATACAMA",
+          "PATAGONIA",
+          "TIERRA DEL FUEGO",
+          "SCOTIA SEA",
+          "AEGEAN SEA",
+          "IONIAN SEA",
+          "SICILY",
+          "IBERIA",
+          "ANATOLIA",
+          "CARPATHIANS",
+          "ALPS",
+          "PYRENEES",
+          "ANDES",
+        ];
+        for (const req of requiredLabels) {{
+          if (!labelNames.has(req)) {{
+            console.error("Missing required GEO_LABEL:", req);
+            process.exit(1);
+          }}
+        }}
+        """
+        proc = subprocess.run(
+            ["node", "-"], input=node_code, capture_output=True, text=True, encoding="utf-8"
+        )
+        assert proc.returncode == 0, f"Europe & South America fault verification failed: {proc.stderr}"
+
+
 
